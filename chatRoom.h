@@ -4,19 +4,16 @@
 #include "balanceBinarySearchTree.h"
 #include <json-c/json.h>
 
-typedef BalanceBinarySearchTree Friend;
-typedef AVLTreeNode friendNode;
+typedef BalanceBinarySearchTree Friend;     //好友列表
+typedef AVLTreeNode friendNode;             //每个好友
 
 typedef struct chatRoomMessage
 {
-    char * name;            //姓名
-    int accountNumber;      //账号     //登录只需要账号和密码
+    char * accountNumber;   //账号     //登录只需要账号和密码
     char * password;        //密码
-    char * nickName;        //昵称
+    char * name;            //昵称
     char * mail;            //邮箱
-    int age;                //年龄
 } chatRoomMessage;
-
 
 
 enum SECLET
@@ -30,9 +27,17 @@ enum SECLET
     QUIT
 };
 
+/* 状态码 */
+enum STATUS_CODE
+{
+    ON_SUCCESS,
+    NULL_PTR,
+    MALLOC_ERROR,
+    INVALID_ACCESS,
+};
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(chatRoomMessage * Message, json_object * obj); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/

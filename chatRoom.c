@@ -3,12 +3,70 @@
 #include <stdlib.h>
 #include <error.h>
 #include <string.h>
+#include <strings.h>
 
+#define PASSWORD_MAX 8
+#define PASSWORD_MIN 6
+#define MAILSIZE 20
+#define NAMESIZE 12
+#define ACCOUNTNUMBER 6
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, friendNode * node)    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node)    /*先这些后面再加*/
 {
+    int ret = 0;
 
+    Message->name = (char *)malloc(sizeof(char) * NAMESIZE);
+    if (Message->name == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    /*清楚脏数据*/
+    bzero(Message->name, sizeof(char) * NAMESIZE);
+
+
+    Message->accountNumber = (char*)malloc(sizeof(char) * ACCOUNTNUMBER);
+    if (Message->accountNumber == NULL)
+    {
+        return MALLOC_ERROR;
+    } 
+
+    Message->mail = (char *)malloc(sizeof(char) * MAILSIZE);
+    if (Message->mail == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero(Message->mail, sizeof(char) * MAILSIZE);
+
+    Message->password = (char*)malloc(sizeof(char) * PASSWORD_MAX);
+    if (Message->password == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero(Message->password, PASSWORD_MAX);
+    
+    obj = json_object_new_object();
+
+    balanceBinarySearchTreeInit(&Info, compareFunc, printFunc);
+
+    node = (friendNode*)malloc(sizeof(friendNode));
+    if (node == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero(node, sizeof(friendNode));
+
+    node->data = (chatRoomMessage*)malloc(sizeof(chatRoomMessage));
+    if (node->data == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    node->height = 0;
+    node->left = NULL;
+    node->right = NULL;
+    node->parent = NULL;
+
+    return ret;
 }
 
 
