@@ -55,13 +55,13 @@ int chatRoomDestroy(chatRoomMessage * Message, json_object * obj)       /*通过
 }
 
 /*注销账号*/
-int chatRoomMessage(chatRoomMessage * Message, json_object * obj)       /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
+int chatRoomMessageLogOff(chatRoomMessage * Message, json_object * obj)       /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
 {
 
 }
 
 /*文件传输*/  /*后面再加*/
-int chatRoomFileTransfer(chatRoomMessage * Message, json_object * obj, ) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
+int chatRoomFileTransfer(chatRoomMessage * Message, json_object * obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
     
 }
