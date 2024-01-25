@@ -16,6 +16,7 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
 {
     int ret = 0;
 
+    /*初始化姓名*/
     Message->name = (char *)malloc(sizeof(char) * NAMESIZE);
     if (Message->name == NULL)
     {
@@ -24,13 +25,14 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
     /*清楚脏数据*/
     bzero(Message->name, sizeof(char) * NAMESIZE);
 
-
+    /*账号初始化*/
     Message->accountNumber = (char*)malloc(sizeof(char) * ACCOUNTNUMBER);
     if (Message->accountNumber == NULL)
     {
         return MALLOC_ERROR;
     } 
 
+    /*邮箱初始化*/
     Message->mail = (char *)malloc(sizeof(char) * MAILSIZE);
     if (Message->mail == NULL)
     {
@@ -38,6 +40,7 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
     }
     bzero(Message->mail, sizeof(char) * MAILSIZE);
 
+    /*密码初始化*/
     Message->password = (char*)malloc(sizeof(char) * PASSWORD_MAX);
     if (Message->password == NULL)
     {
@@ -45,10 +48,13 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
     }
     bzero(Message->password, PASSWORD_MAX);
     
+    //创建一个json对象
     obj = json_object_new_object();
 
+    //将用户列表初始化
     balanceBinarySearchTreeInit(&Info, compareFunc, printFunc);
 
+    //初始化一个好友结点
     node = (friendNode*)malloc(sizeof(friendNode));
     if (node == NULL)
     {
@@ -56,6 +62,7 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
     }
     bzero(node, sizeof(friendNode));
 
+    /*结点内容初始化*/
     node->data = (chatRoomMessage*)malloc(sizeof(chatRoomMessage));
     if (node->data == NULL)
     {
