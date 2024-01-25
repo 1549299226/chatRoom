@@ -66,7 +66,7 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
     node->right = NULL;
     node->parent = NULL;
 
-    return 0;
+    return ret;
 }
 
 
