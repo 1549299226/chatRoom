@@ -18,7 +18,7 @@ typedef struct chatRoomMessage
 } chatRoomMessage;
 
 
-enum SECLET
+enum SELECT
 {
     BUILT = 1,
     SEEK,
