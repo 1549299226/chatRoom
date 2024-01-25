@@ -9,10 +9,12 @@ typedef AVLTreeNode friendNode;             //每个好友
 
 typedef struct chatRoomMessage
 {
-    char * accountNumber;   //账号     //登录只需要账号和密码
+    
+    int accountNumber;      //账号     //登录只需要账号和密码
     char * password;        //密码
     char * name;            //昵称
     char * mail;            //邮箱
+   
 } chatRoomMessage;
 
 

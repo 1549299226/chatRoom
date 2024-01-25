@@ -73,6 +73,24 @@ int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, in
 /*注册账号*/
 int chatRoomInsert(chatRoomMessage * Message, json_object * obj) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 {
+    int letter = 0;   //记录是否有字母
+    int figure = 0;    //记录是否有数字
+    int specialCharacter = 0;   //记录是否有特殊字符
+    printf("请输入账号：(六位0-9的数字)\n");
+    scanf("%s", Message->accountNumber);
+    for (int idx = 0; idx < sizeof(Message->accountNumber); idx++)
+    {
+        if (idx > '9' || idx < '0')
+        {
+            s
+        }
+        
+    }
+    
+    printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
+    scanf("%s", Message->password);
+    printf("请输入你的邮箱\n");
+    scanf("%s", Message->mail);
 
 }
 
