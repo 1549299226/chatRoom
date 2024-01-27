@@ -18,6 +18,7 @@
 #define DBUSER "root"
 #define DBPASS "1"
 #define DBNAME "chatRoom"
+
 #define BUFFER_SIZE 100
 
 
@@ -48,6 +49,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
     {
         return MALLOC_ERROR;
     }
+    bzero(Message->accountNumber, sizeof(char) * ACCOUNTNUMBER);
 
     /*邮箱初始化*/
     Message->mail = (char *)malloc(sizeof(char) * MAILSIZE);
@@ -85,6 +87,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
     {
         return MALLOC_ERROR;
     }
+    bzero(node->data, sizeof(chatRoomMessage));
     node->height = 0;
     node->left = NULL;
     node->right = NULL;
@@ -132,7 +135,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
 static int accountRegistration(char * accountNumber , MYSQL * conn)        //判断账号是否正确,正确返回0，错误返回-1
 {
     int len = 0;               //长度
-    int fang = 0;            //标记
+    int flag = 0;            //标记
     int count = 0;           //计数器
 
     len = sizeof(accountNumber);
@@ -145,26 +148,26 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)        //判
         {                                      
             memset(accountNumber, 0, sizeof(accountNumber));   /*不满足条件将内容归零，重新输入*/
             count = 0; 
-            fang = 1;
+            flag = 1;
             break;
         }
         count++;
     }   
-    if (count != len || fang != 0)   /*判断账号长度是满足条件*/
+    if (count != len || flag != 0)   /*判断账号长度是满足条件*/
     {  
         if (count != len)
         {
-            fang += 2;
+            flag += 2;
         }
-        if (fang == 2)
+        if (flag == 2)
         {
             printf("账号长度不符合请重新输入\n");
         }
-        else if (fang == 1)
+        else if (flag == 1)
         {
             printf("账号格式不符合请重新输入\n");
         }
-        else if (fang == 3)
+        else if (flag == 3)
         {
             printf("账号长度与格式都不符合条件\n");
         }
@@ -199,7 +202,7 @@ static int registrationPassword(char * password)     //判断密码是否正确,
     int specialCharacter = 0; // 记录是否有特殊字符
     int len = sizeof(password);
     int count = 0;
-    int fang = 0;
+    int flag = 0;
     while (count < len)             //判断密码合法否
     {
         if (password[count] <= '9' && password[count] >= '0')       //判断是否有数字
@@ -219,25 +222,25 @@ static int registrationPassword(char * password)     //判断密码是否正确,
     if (count <= 6 || count >= 8 )
     {
         printf("密码长度不符\n");
-        fang++;
+        flag++;
     }
     if (figure == 0)
     {
         printf("密码格式不符，没有数字\n");
-        fang++;
+        flag++;
     }
     if (letter == 0)
     {
         printf("密码格式不符，没有字母\n");
-        fang++;
+        flag++;
     }
     if (specialCharacter == 0)
     {
         printf("密码格式不符，没有特殊字符\n");
-        fang++;
+        flag++;
     }
 
-    if (fang != 0)
+    if (flag != 0)
     {
         memset(password, 0, sizeof(password));
         return -1;
@@ -322,6 +325,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 /*登录*/
 int chatRoomLogIn(chatRoomMessage *Message, json_object *obj) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 {
+
 }
 
 /*添加好友*/
