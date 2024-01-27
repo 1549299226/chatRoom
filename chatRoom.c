@@ -18,11 +18,14 @@
 #define DBUSER "root"
 #define DBPASS "1"
 #define DBNAME "chatRoom"
+#define BUFFER_SIZE 100
 
 
-static int accountRegistration(char * accountNumber);    //判断账号是否合法
+static int accountRegistration(char * accountNumber , MYSQL * conn);    //判断账号是否合法
 
 static int registrationPassword(char * password);       //判断密码是否合法
+
+static int nameLegitimacy(char * name, MYSQL * conn)  //判断昵称的合法性
 
 
 /*初始化聊天室*/
@@ -104,7 +107,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
     }
     
     /*创建数据库*/
-    if (mysql_query(conn, "CREATE DATABASE IF NOT EXISTS chatRoom"))
+    if (mysql_query(conn, "CREATE DATABASE IF NOT EXISTS chatRoom.db"))
     {
         fprintf(stderr, "Error %u: %s\n", mysql_errno(conn), mysql_error(conn));
     } 
@@ -126,7 +129,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
 
 
 
-static int accountRegistration(char * accountNumber)        //判断账号是否正确,正确返回0，错误返回-1
+static int accountRegistration(char * accountNumber , MYSQL * conn)        //判断账号是否正确,正确返回0，错误返回-1
 {
     int len = 0;               //长度
     int fang = 0;            //标记
@@ -149,7 +152,10 @@ static int accountRegistration(char * accountNumber)        //判断账号是否
     }   
     if (count != len || fang != 0)   /*判断账号长度是满足条件*/
     {  
-        fang += 2;
+        if (count != len)
+        {
+            fang += 2;
+        }
         if (fang == 2)
         {
             printf("账号长度不符合请重新输入\n");
@@ -168,52 +174,147 @@ static int accountRegistration(char * accountNumber)        //判断账号是否
     }
 
     
+    /*创建一个缓冲区*/
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+
+    /*将账号信息放进占位符中，放到缓存器buffer*/
+    snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE  accountNumber = '%s'", accountNumber);
     
-    return 0;
+    /*判断该账号是否在数据库中*/
+    if (mysql_query(conn, buffer))
+    {
+        return 0;
+    }
+
+    printf("已有该账号\n");
+    return -1;
 }
 
-static int registrationPassword(cahr * password)    //判断密码是否合法
+//判断密码是否合法
+static int registrationPassword(char * password)     //判断密码是否正确,正确返回0，错误返回-1
 {
     int letter = 0;           // 记录是否有字母
     int figure = 0;           // 记录是否有数字
     int specialCharacter = 0; // 记录是否有特殊字符
     int len = sizeof(password);
     int count = 0;
-    
+    int fang = 0;
     while (count < len)             //判断密码合法否
     {
-        if (password[count] > '9' && password[count] < '0')
+        if (password[count] <= '9' && password[count] >= '0')       //判断是否有数字
         {
-            
+            figure++;
         }
-        
+        else if ((password[count] <= 'a' && password[count] >= 'z') || (password[count] <= 'A' && password[count] >= 'Z')) /*判断是否有字母*/
+        {   
+            letter++;
+        }
+        else if (password[count] != ' ' && password[const] != '\0')         /*判断是否有特殊字符*/
+        {
+            specialCharacter++;
+        }
+        count++;
     }
-        
+    if (count <= 6 || count >= 8 )
+    {
+        printf("密码长度不符\n");
+        fang++;
+    }
+    if (figure == 0)
+    {
+        printf("密码格式不符，没有数字\n");
+        fang++;
+    }
+    if (letter == 0)
+    {
+        printf("密码格式不符，没有字母\n");
+        fang++;
+    }
+    if (specialCharacter == 0)
+    {
+        printf("密码格式不符，没有特殊字符\n");
+        fang++;
+    }
+
+    if (fang != 0)
+    {
+        memset(password, 0, sizeof(password));
+        return -1;
+    }
+    
+
+    return 0;
 }
 
-/*注册*/
-int chatRoomInsert(chatRoomMessage *Message, json_object *obj) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
+static int nameLegitimacy(char * name, MYSQL * conn)  //判断昵称的合法性, 正确返回0，错误返回-1
+{
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+
+    snprintf(buffer, sizeof(buffer), "SELECT name FROM chatRoom WHERE name = '%s'", name);
+
+    if (mysql_query(conn, buffer))
+    {
+        printf("已有该昵称\n");
+        memset(name, 0, sizeof(name));
+        return -1;
+    }
+    
+    return 0;
+}
+
+/*注册*/    //注册成功返回0， 失败返回-1
+int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 {
     
     int ret = 0;
     
-        printf("请输入账号：(六位0-9的数字)\n");
-        scanf("%s", Message->accountNumber);          /*输入账号*/ 
+    printf("请输入账号：(六位0-9的数字)\n");
+    scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
-        ret = accountRegistration(Message->accountNumber);  /*判断账号是否合法*/
-        if (ret == -1)      
-        {
-            exit(-1);
-        }
-
-        printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
-        scanf("%s", Message->password);
+    ret = accountRegistration(Message->accountNumber);  /*判断账号是否合法*/
+    if (ret == -1)      
+    {
+        return -1;
+    }
 
 
+    /**/
+    printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
+    scanf("%s", Message->password);
+    ret = registrationPassword(Message->password);
+    if (ret == -1)
+    {
+        return -1; 
+    }
 
-        printf("请输入你的邮箱\n");
-        scanf("%s", Message->mail);
+    printf("请输入你的邮箱\n");
+    scanf("%s", Message->mail);
+    
+    printf("请输入昵称\n");
+    scanf("%s", Message->name);
+    ret = nameLegitimacy(Message->name, conn);
+    if (ret == -1)
+    {
+        return -1;
+    }
+    
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
 
+    snprintf(buffer, sizeof(buffer), "INSERT INTO chatRoom VALUES ('%s', '%s', '%s', '%s')", 
+                Message->accountNumber, Message->password, Message->name, Message->mail);
+    if (mysql_query(conn, buffer))
+    {
+        exit(-1);
+    }
+    
+
+    printf("注册成功\n");
+
+    return 0;
+        
     
     
 }
