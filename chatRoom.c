@@ -488,19 +488,72 @@ int chatRoomPrivateChat(chatRoomMessage *Message, json_object *obj) /*建立一�
 /*建立一个群聊的联系，建立完后将其存储起来*/
 int chatRoomGroupChat(chatRoomMessage *Message, json_object *obj) /*通过UDP进行群发，一些人能够接到*/ /*有点问题后面再想*/
 {
+
 }
 
 /*删除好友的销毁信息*/
-int chatRoomDestroy(chatRoomMessage *Message, json_object *obj) /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
+int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, MYSQL * conn) /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
 {
+    Friend * data = Info;
+    int flag = 0;
+
+    
+    printf("请输入要删除好友的姓名\n");
+    scanf("%s", Message->name);
+    
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "SELECT name FROM Friend WHERE name = %s", Message->name);
+    if (mysql_query(conn, buffer))
+    {
+        printf("没有该好友\n");
+        exit(-1);
+    }
+    printf("是否要删除该好友 1.是\t2.否\n");
+    scanf("%s", flag);
+    
+    if (flag == 1)
+    {
+        snprintf(buffer, sizeof(buffer), "DELETE FROM Friend WHERE name = %s", Message->name);
+        if (mysql_query(conn, buffer))
+        {
+            printf("系统错误,删除失败\n");
+            exit(-1);
+        }
+        else 
+        {   
+            
+            if (balanceBinarySearchTreeDelete(Info, Message->name) != 0)
+            {
+                exit(-1);
+            }
+            printf("删除成功\n");
+            exit(0);
+        }
+    }
+    else if (flag == 2)
+    {
+        printf("取消成功\n");
+        exit(0);
+    }
+    else
+    {
+        printf("输入内容不符\n");
+        return -1;
+    }
+
+    return 0;
+    
 }
 
 /*注销账号*/
 int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
 {
+    
 }
 
 /*文件传输*/                                                         /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
+
 }
