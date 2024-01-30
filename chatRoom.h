@@ -61,7 +61,7 @@ int chatRoomPrivateChat(chatRoomMessage * Message, json_object * obj);   /*建�
 int chatRoomGroupChat(chatRoomMessage * Message, json_object * obj);     /*通过UDP进行群发，一些人能够接到*/   /*有点问题后面再想*/
 
 /*删除好友的销毁信息*/
-int chatRoomDestroy(chatRoomMessage * Message, json_object * obj);       /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
+int chatRoomDestroy(chatRoomMessage * Message, json_object * obj, Friend * Info, MYSQL * conn);       /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
 
 /*注销账号*/
 int chatRoomMessageLogOff(chatRoomMessage * Message, json_object * obj);       /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
