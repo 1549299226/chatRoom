@@ -49,7 +49,7 @@ int chatRoomInsert(chatRoomMessage * Message, json_object * obj, MYSQL * conn); 
 int chatRoomLogIn(chatRoomMessage * Message, json_object * obj, MYSQL * conn);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 
 /*添加好友*/
-int chatRoomAppend(chatRoomMessage * Message, json_object * obj, Friend * Info);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
+int chatRoomAppend(chatRoomMessage * Message, json_object * obj, MYSQL * conn, Friend * Info);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage * Message, json_object * obj);    /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
