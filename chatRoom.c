@@ -28,6 +28,8 @@ static int registrationPassword(char * password);       //判断密码是否合�
 
 static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法性
 
+static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断账号密码是否正确
+
 
 /*初始化聊天室*/
 int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
@@ -131,8 +133,8 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
 
 
 
-
-static int accountRegistration(char * accountNumber , MYSQL * conn)        //判断账号是否正确,正确返回0，错误返回-1
+//判断账号是否正确,正确返回0，错误返回-1
+static int accountRegistration(char * accountNumber , MYSQL * conn)        
 {
     int len = 0;               //长度
     int flag = 0;            //标记
@@ -144,18 +146,16 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)        //判
     {
               /*保存账号长度*/
 
-        if (count > '9' || count < '0')     /*判断是否满足账号要求*/
+        if (accountNumber[count] > '9' || accountNumber[count] < '0')     /*判断是否满足账号要求*/
         {                                      
             memset(accountNumber, 0, sizeof(accountNumber));   /*不满足条件将内容归零，重新输入*/
-            count = 0; 
             flag = 1;
-            break;
         }
         count++;
     }   
-    if (count != len || flag != 0)   /*判断账号长度是满足条件*/
+    if (count != ACCOUNTNUMBER || flag != 0)   /*判断账号长度是满足条件*/
     {  
-        if (count != len)
+        if (count != ACCOUNTNUMBER)
         {
             flag += 2;
         }
@@ -209,7 +209,7 @@ static int registrationPassword(char * password)     //判断密码是否正确,
         {
             figure++;
         }
-        else if ((password[count] <= 'a' && password[count] >= 'z') || (password[count] <= 'A' && password[count] >= 'Z')) /*判断是否有字母*/
+        else if ((password[count] <= 'z' && password[count] >= 'a') || (password[count] <= 'Z' && password[count] >= 'A')) /*判断是否有字母*/
         {   
             letter++;
         }
@@ -250,7 +250,8 @@ static int registrationPassword(char * password)     //判断密码是否正确,
     return 0;
 }
 
-static int nameLegitimacy(char * name, MYSQL * conn)  //判断昵称的合法性, 正确返回0，错误返回-1
+//判断昵称的合法性, 正确返回0，错误返回-1
+static int nameLegitimacy(char * name, MYSQL * conn)  
 {
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
@@ -322,15 +323,48 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     
 }
 
-/*登录*/
-int chatRoomLogIn(chatRoomMessage *Message, json_object *obj) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+//判断账号密码是否正确   正确返回0，错误返回-1
+static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
 {
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", Message->accountNumber);
+    if (mysql_query(conn, buffer))
+    {
+        printf("没有该用户\n");
+        exit(-1);
+    }
 
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s' and password = '%s'", Message->accountNumber, Message->password);
+    if (mysql_query(conn, buffer))
+    {
+        printf("账号密码不匹配\n");
+        exit(-1);
+    }
+
+    return 0;
+    
+    
+}
+
+/*登录*/  /*正确返回0， 错误返回-1*/
+int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+{
+    int ret = 0;
+    ret = determineIfItExists(Message, conn);
+    if (ret == -1)
+    {
+        return -1;
+    }
+    return 0;
+    
 }
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
+
 }
 
 /*看是否有人在线*/
