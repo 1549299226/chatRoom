@@ -26,9 +26,7 @@ static int accountRegistration(char * accountNumber , MYSQL * conn);    //判断
 
 static int registrationPassword(char * password);       //判断密码是否合法
 
-static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法性
-
-static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断账号密码是否正确
+static int nameLegitimacy(char * name, MYSQL * conn)  //判断昵称的合法性
 
 
 /*初始化聊天室*/
@@ -359,20 +357,32 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
 /*登录*/  /*正确返回0， 错误返回-1*/
 int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 {
-    int ret = 0;
-    ret = determineIfItExists(Message, conn);
-    if (ret == -1)
+    struct json_object * accountNumVal = json_object_object_get(obj, "accountNum");
+    if (accountNumVal == NULL)
     {
-        return -1;
+        printf("get accountNumVal error\n");
+        exit(-1);
     }
-    return 0;
-    
+
+    struct json_object * passwordVal = json_object_object_get(obj, "password");
+    if (passwordVal == NULL)
+    {
+        perror("get passwordVal error\n");
+        exit(-1);
+    }
+
+    accountNumVal = Message->accountNumber;
+    passwordVal = Message->password;
+
+    determineIfItExists(Message, conn);
+
+
 }
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
-    printf("请选择 1.昵称查找 2.用账号查找\n");
+      printf("请选择 1.昵称查找 2.用账号查找\n");
     int flag = 0;
 
     while (1)
@@ -392,7 +402,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             {
                 printf("查无此人\n");
                 free(buffer);
-                buffer = NULL;
                 exit(-1);
             }
             else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
@@ -463,7 +472,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             {
                 printf("查无此人\n");
                 free(buffer);
-                buffer = NULL;
                 exit(-1);
             }
 
@@ -474,10 +482,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             exit(-1);
         }
     }
-    
-    
-    
-    
     
 }
 
