@@ -26,7 +26,7 @@ static int accountRegistration(char * accountNumber , MYSQL * conn);    //判断
 
 static int registrationPassword(char * password);       //判断密码是否合法
 
-static int nameLegitimacy(char * name, MYSQL * conn)  //判断昵称的合法性
+static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法性
 
 
 /*初始化聊天室*/
@@ -284,6 +284,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
+    ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
         return -1;
@@ -382,7 +383,7 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
-      printf("请选择 1.昵称查找 2.用账号查找\n");
+    printf("请选择 1.昵称查找 2.用账号查找\n");
     int flag = 0;
 
     while (1)
@@ -407,19 +408,22 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
             {
                 memset(buffer, 0, sizeof(buffer));
-                chatRoomMessage fri;           /*又可以改进的地方  可以改为查到将用户的信息打印出来，之后再确定要不要加此人为好友，
-                                                是，则向该用户发送一个信息是否接受该用户的好友申请，
-                                                选1接受 2不接受应该如此，现在完成的是点击加好友就直接加到了自己的好友表中是不太友好的*/
+                chatRoomMessage fri; 
                 memset(&fri, 0, sizeof(fri));
-                MYSQL_RES *res = mysql_use_result(conn);   /*将查询到的结果集放到res中*/
-                int num_rows = mysql_num_rows(res);        /*获取结果集中的行数*/
-                MYSQL_RES row;
-                if ((row = mysql_fetch_row(res)) != NULL) 
+
+                MYSQL_RES *res = mysql_use_result(conn);
+                 if (res != NULL) 
                 {
-                    snprintf(fri.accountNumber, sizeof(fri.accountNumber), "%s", row[0]);   //将结果集中的结果按每个属性放入相应的位置
-                    snprintf(fri.name, sizeof(fri.name), "%s", row[1]);
+                    MYSQL_ROW row;
+                    if ((row = mysql_fetch_row(res)) != NULL) 
+                    {
+                        snprintf(fri.accountNumber, sizeof(fri.accountNumber), "%s", row[0]);
+                        snprintf(fri.name, sizeof(fri.name), "%s", row[1]);
+                            // 处理完一行数据后的其他操作
+                    }
+                    mysql_free_result(res);  // 释放查询结果集
                 }
-                
+
                 snprintf(buffer, sizeof(buffer), "INSERT INTO Friend(accountNumber name) VALUES ('%s', '%s')", fri.accountNumber, fri.name);
                 if (mysql_query(conn, buffer))
                 {
