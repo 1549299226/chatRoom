@@ -125,7 +125,15 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
         exit(1);
     } 
 
-
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+    //创建表
+    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXISTS chatRoom (accountNumber, '%s', '%s', '%s')", 
+                Message->accountNumber, Message->password, Message->name, Message->mail);
+    if (mysql_query(conn, buffer))
+    {
+        exit(-1);
+    }
     
 
     return ret;
@@ -209,7 +217,7 @@ static int registrationPassword(char * password)     //判断密码是否正确,
         {
             figure++;
         }
-        else if ((password[count] <= 'z' && password[count] >= 'a') || (password[count] <= 'Z' && password[count] >= 'A')) /*判断是否有字母*/
+        else if ((password[count] >= 'a' && password[count] <= 'z') || (password[count] >= 'A' && password[count] <= 'Z')) /*判断是否有字母*/
         {   
             letter++;
         }
@@ -362,37 +370,198 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 }
 
 /*添加好友*/
-int chatRoomAppend(chatRoomMessage *Message, json_object *obj, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
+int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
+    printf("请选择 1.昵称查找 2.用账号查找\n");
+    int flag = 0;
 
+    while (1)
+    {
+        scanf("%d", flag);
+
+        char buffer[BUFFER_SIZE];
+        memset(buffer, 0, sizeof(buffer));
+
+        if (flag == 1)      //用账号查找  
+        {
+            scanf("%s", Message->accountNumber);
+            
+
+            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE accountNumber = '%s'", Message->accountNumber);
+            if (mysql_query(conn, buffer))
+            {
+                printf("查无此人\n");
+                free(buffer);
+                buffer = NULL;
+                exit(-1);
+            }
+            else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+            {
+                memset(buffer, 0, sizeof(buffer));
+                chatRoomMessage fri;           /*又可以改进的地方  可以改为查到将用户的信息打印出来，之后再确定要不要加此人为好友，
+                                                是，则向该用户发送一个信息是否接受该用户的好友申请，
+                                                选1接受 2不接受应该如此，现在完成的是点击加好友就直接加到了自己的好友表中是不太友好的*/
+                memset(&fri, 0, sizeof(fri));
+                MYSQL_RES *res = mysql_use_result(conn);   /*将查询到的结果集放到res中*/
+                int num_rows = mysql_num_rows(res);        /*获取结果集中的行数*/
+                MYSQL_RES row;
+                if ((row = mysql_fetch_row(res)) != NULL) 
+                {
+                    snprintf(fri.accountNumber, sizeof(fri.accountNumber), "%s", row[0]);   //将结果集中的结果按每个属性放入相应的位置
+                    snprintf(fri.name, sizeof(fri.name), "%s", row[1]);
+                }
+                
+                snprintf(buffer, sizeof(buffer), "INSERT INTO Friend(accountNumber name) VALUES ('%s', '%s')", fri.accountNumber, fri.name);
+                if (mysql_query(conn, buffer))
+                {
+                    printf("系统错误，添加好友失败\n");
+                    exit(-1);
+                }
+                else                            /*在此出编写发出好友请求*/
+                {
+                    /*这里可能需要添加东西现在还不知道先放着*/
+                    printf("已发出好友请求\n");             
+                    exit(1);                    /*返回1，用来标记是否要发出好友请求，用线程来进行该任务*/
+                }
+
+
+                flag = 0;                   /*这里少东西还，*/
+                printf("是否要添加此人为好友:\n1.是   2.否\n");
+                scanf("%d", flag);
+                if (flag == 1)
+                {
+                    
+                    if (mysql_query(conn, "CREATE TABLE IF NOT EXIST Friend (accountNumber char[10] PRIMARY KEY, name text NOT NULL)"))
+                    {
+                        printf("系统故障，添加失败\n");
+                        exit(-1);
+                    }  
+
+                    printf("添加成功\n");
+                    exit(-1);
+                }
+                else if (flag == 2)
+                {
+                    printf("返回成功\n");
+                    exit(0);
+                }
+                else
+                {
+                    printf("输入内容不符\n");
+                    exit(-1);
+                }
+            }
+        }
+        else if (flag == 2)     //用昵称查找
+        {
+            scanf("%s", Message->name);
+            char buffer[BUFFER_SIZE];
+            memset(buffer, 0, sizeof(buffer));
+
+            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE name = '%s'", Message->name);
+            if (mysql_query(conn, buffer))
+            {
+                printf("查无此人\n");
+                free(buffer);
+                buffer = NULL;
+                exit(-1);
+            }
+
+        }
+        else
+        {
+            printf("输入有误，请重新输入\n");
+            exit(-1);
+        }
+    }
+    
+    
+    
+    
+    
 }
 
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 {
+    
 }
 
 /*建立私聊的联系*/
 int chatRoomPrivateChat(chatRoomMessage *Message, json_object *obj) /*建立一个联系只有双方能够聊天*/ /*判断其书否在线， 是否存在这个好友*/
-{
+{ 
+    
 }
 
 /*建立一个群聊的联系，建立完后将其存储起来*/
 int chatRoomGroupChat(chatRoomMessage *Message, json_object *obj) /*通过UDP进行群发，一些人能够接到*/ /*有点问题后面再想*/
 {
+
 }
 
 /*删除好友的销毁信息*/
-int chatRoomDestroy(chatRoomMessage *Message, json_object *obj) /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
+int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, MYSQL * conn) /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/
 {
+    Friend * data = Info;
+    int flag = 0;
+
+    
+    printf("请输入要删除好友的姓名\n");
+    scanf("%s", Message->name);
+    
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "SELECT name FROM Friend WHERE name = %s", Message->name);
+    if (mysql_query(conn, buffer))
+    {
+        printf("没有该好友\n");
+        exit(-1);
+    }
+    printf("是否要删除该好友 1.是\t2.否\n");
+    scanf("%s", flag);
+    
+    if (flag == 1)
+    {
+        snprintf(buffer, sizeof(buffer), "DELETE FROM Friend WHERE name = %s", Message->name);
+        if (mysql_query(conn, buffer))
+        {
+            printf("系统错误,删除失败\n");
+            exit(-1);
+        }
+        else 
+        {   
+            
+            if (balanceBinarySearchTreeDelete(Info, Message->name) != 0)
+            {
+                exit(-1);
+            }
+            printf("删除成功\n");
+            exit(0);
+        }
+    }
+    else if (flag == 2)
+    {
+        printf("取消成功\n");
+        exit(0);
+    }
+    else
+    {
+        printf("输入内容不符\n");
+        return -1;
+    }
+
+    return 0;
+    
 }
 
 /*注销账号*/
 int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
 {
+    
 }
 
 /*文件传输*/                                                         /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
+
 }
