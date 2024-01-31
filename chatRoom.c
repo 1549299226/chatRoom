@@ -28,8 +28,6 @@ static int registrationPassword(char * password);       //判断密码是否合�
 
 static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法性
 
-static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断账号密码是否正确
-
 
 /*初始化聊天室*/
 int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
@@ -286,6 +284,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
+    ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
         return -1;
@@ -359,14 +358,26 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
 /*登录*/  /*正确返回0， 错误返回-1*/
 int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 {
-    int ret = 0;
-    ret = determineIfItExists(Message, conn);
-    if (ret == -1)
+    struct json_object * accountNumVal = json_object_object_get(obj, "accountNum");
+    if (accountNumVal == NULL)
     {
-        return -1;
+        printf("get accountNumVal error\n");
+        exit(-1);
     }
-    return 0;
-    
+
+    struct json_object * passwordVal = json_object_object_get(obj, "password");
+    if (passwordVal == NULL)
+    {
+        perror("get passwordVal error\n");
+        exit(-1);
+    }
+
+    accountNumVal = Message->accountNumber;
+    passwordVal = Message->password;
+
+    determineIfItExists(Message, conn);
+
+
 }
 
 /*添加好友*/
@@ -392,25 +403,27 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             {
                 printf("查无此人\n");
                 free(buffer);
-                buffer = NULL;
                 exit(-1);
             }
             else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
             {
                 memset(buffer, 0, sizeof(buffer));
-                chatRoomMessage fri;           /*又可以改进的地方  可以改为查到将用户的信息打印出来，之后再确定要不要加此人为好友，
-                                                是，则向该用户发送一个信息是否接受该用户的好友申请，
-                                                选1接受 2不接受应该如此，现在完成的是点击加好友就直接加到了自己的好友表中是不太友好的*/
+                chatRoomMessage fri; 
                 memset(&fri, 0, sizeof(fri));
-                MYSQL_RES *res = mysql_use_result(conn);   /*将查询到的结果集放到res中*/
-                int num_rows = mysql_num_rows(res);        /*获取结果集中的行数*/
-                MYSQL_RES row;
-                if ((row = mysql_fetch_row(res)) != NULL) 
+
+                MYSQL_RES *res = mysql_use_result(conn);
+                 if (res != NULL) 
                 {
-                    snprintf(fri.accountNumber, sizeof(fri.accountNumber), "%s", row[0]);   //将结果集中的结果按每个属性放入相应的位置
-                    snprintf(fri.name, sizeof(fri.name), "%s", row[1]);
+                    MYSQL_ROW row;
+                    if ((row = mysql_fetch_row(res)) != NULL) 
+                    {
+                        snprintf(fri.accountNumber, sizeof(fri.accountNumber), "%s", row[0]);
+                        snprintf(fri.name, sizeof(fri.name), "%s", row[1]);
+                            // 处理完一行数据后的其他操作
+                    }
+                    mysql_free_result(res);  // 释放查询结果集
                 }
-                
+
                 snprintf(buffer, sizeof(buffer), "INSERT INTO Friend(accountNumber name) VALUES ('%s', '%s')", fri.accountNumber, fri.name);
                 if (mysql_query(conn, buffer))
                 {
@@ -463,7 +476,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             {
                 printf("查无此人\n");
                 free(buffer);
-                buffer = NULL;
                 exit(-1);
             }
 
@@ -474,10 +486,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             exit(-1);
         }
     }
-    
-    
-    
-    
     
 }
 

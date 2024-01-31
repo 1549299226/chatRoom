@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 10000
-#define SERVER_IP "172.23.179.110"
+#define SERVER_IP "172.27.132.115"
 
 void * pthread_Fun(int *arg)
 { 
