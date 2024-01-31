@@ -125,7 +125,15 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
         exit(1);
     } 
 
-
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+    //创建表
+    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXISTS chatRoom (accountNumber, '%s', '%s', '%s')", 
+                Message->accountNumber, Message->password, Message->name, Message->mail);
+    if (mysql_query(conn, buffer))
+    {
+        exit(-1);
+    }
     
 
     return ret;
@@ -476,7 +484,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 {
-
+    
 }
 
 /*建立私聊的联系*/
