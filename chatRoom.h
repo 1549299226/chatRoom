@@ -4,6 +4,7 @@
 #include "balanceBinarySearchTree.h"
 #include <json-c/json.h>
 #include <mysql/mysql.h>
+#include <string.h>
 
 typedef BalanceBinarySearchTree Friend;     //好友列表
 typedef AVLTreeNode friendNode;             //每个好友
@@ -39,14 +40,17 @@ enum STATUS_CODE
     INVALID_ACCESS,
 };
 
+
+
+
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, Friend *client, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 
 /*登录*/
-int chatRoomLogIn(chatRoomMessage * Message, json_object * obj, MYSQL * conn);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+int chatRoomLogIn(chatRoomMessage * Message, json_object * obj, Friend *client, MYSQL * conn;   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage * Message, json_object * obj, MYSQL * conn, Friend * Info);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
