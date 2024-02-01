@@ -91,14 +91,15 @@ int main()
     /*将Ctrl+z设置为退出程序*/
     signal(SIGTSTP, SIG_IGN);
     signal(SIGTSTP, Off);
-
+    
+    /*初始化*/
     chatRoomMessage *Message = NULL;
     json_object *obj = NULL;
     Friend *Info = NULL;
     MYSQL *conn = NULL;
     friendNode *node = NULL;
-    /*初始化*/
-    chatRoomInit(Message, obj, Info, conn, existenceOrNot, printStruct, node);
+    Friend *client = NULL;
+    chatRoomInit(Message, obj, Info, client, conn, existenceOrNot, printStruct, node);
 
 
     
@@ -144,6 +145,9 @@ int main()
     // socklen_t clientAddressLen = sizeof(clientAddress);
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
+    
+    char sendBuffer[BUFFER_SIZE];
+    memset(sendBuffer, 0, sizeof(sendBuffer));
 
     while (1)
     {
@@ -154,14 +158,40 @@ int main()
             exit(-1);
         }
         /*注册*/
-
-        
-        if (chatRoomInsert(Message, obj, conn))
+        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+        if (!strncmp(recvBuffer, "1",sizeof(recvBuffer)))
         {
-            memset(recvBuffer, 0, sizeof(recvBuffer));
-            printf("注册失败\n");
-            continue;
+            if (!chatRoomInsert(Message, obj, conn))
+            {
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                strncpy(sendBuffer, "注册失败", sizeof(sendBuffer) - 1);
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                continue;
+            }
+            else
+            {
+                strncpy(sendBuffer, "注册成功", sizeof(sendBuffer) - 1);
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            }
         }
+        else if (strncmp(recvBuffer, "2",sizeof(recvBuffer)))
+        {
+            if (!chatRoomLogIn(Message, obj, client, conn))
+            {
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                continue;
+            }
+            else
+            {
+                strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            }
+        }
+        
+        
+        
         
         pthread_t tip;
         pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);

@@ -14,7 +14,7 @@
 #define ACCOUNTNUMBER 6
 
 /*数据库的宏*/
-#define DBHOST "localhost"
+#define DBHOST "127.0.0.1"
 #define DBUSER "root"
 #define DBPASS "1"
 #define DBNAME "chatRoom"
@@ -108,7 +108,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, Frien
     }
 
     /*连接数据库*/
-    if (mysql_real_connect(conn, "DBHOST", "DBUSER", "DBPASS", NULL, 0, NULL, 0) == NULL) 
+    if (mysql_real_connect(conn, DBHOST, DBUSER, DBPASS, NULL, 0, NULL, 0) == NULL) 
     {
         fprintf(stderr, "mysql_real_connect failed: %s\n", mysql_error(conn));
         mysql_close(conn);
@@ -116,7 +116,7 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, Frien
     }
     
     /*创建数据库*/
-    if (mysql_query(conn, "CREATE DATABASE IF NOT EXISTS chatRoom.db"))
+    if (mysql_query(conn, "CREATE DATABASE IF NOT EXISTS chatRoom"))
     {
         fprintf(stderr, "Error %u: %s\n", mysql_errno(conn), mysql_error(conn));
     } 
@@ -433,7 +433,7 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
                 // 处理完一行数据后的其他操作
             
             memset(node, 0, sizeof(node));
-            node = friendMessage;
+            node = (friendNode *)friendMessage;
             balanceBinarySearchTreeInsert(client, node);
         }
         // 释放结果集内存
@@ -514,7 +514,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     }
                     friendNode *node = (friendNode *)malloc(sizeof(friendNode));
                     memset(node, 0, sizeof(node));
-                    node = friendMessage;
+                    node = (friendNode *)friendMessage;
                     //插入到好友列表
                     balanceBinarySearchTreeInsert(client, friendMessage);
 
@@ -533,7 +533,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
         }
         else if (flag == 2)     //用昵称查找
         {
-            scanf("%s", Friend.name);
+            scanf("%s", friendMessage->name);
             char buffer[BUFFER_SIZE];
             memset(buffer, 0, sizeof(buffer));
 
@@ -551,7 +551,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     MYSQL_ROW row;
                     if ((row = mysql_fetch_row(res)) != NULL) 
                     {
-                        snprintf(Friend->accountNumber, sizeof(Friend->accountNumber), "%s", row[0]);
+                        snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
                         // snprintf(Friend->name, sizeof(Friend->name), "%s", row[1]);
 
                             // 处理完一行数据后的其他操作
@@ -565,7 +565,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 if (flag == 1)
                 {
                     //创建好友表   有问题   好友表没有标记出来
-                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, Friend->accountNumber, Friend->name);
+                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
                         printf("系统错误，添加好友失败\n");
@@ -573,7 +573,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     }
                     friendNode *node = (friendNode *)malloc(sizeof(friendNode));
                     memset(node, 0, sizeof(node));
-                    node = friendMessage;
+                    node = (friendNode *)friendMessage;
                     //插入到好友列表
                     balanceBinarySearchTreeInsert(client, friendMessage);
                     //添加好友到树中
@@ -628,7 +628,7 @@ int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, M
 
     chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     printf("请输入要删除好友的姓名\n");
-    scanf("%s", Friend->name);
+    scanf("%s", friendMessage->name);
     
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));

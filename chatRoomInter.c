@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "chatRoomInter.h"
-
+#include <string.h>
 
 
 /* 欢迎界面以及选择界面 */
@@ -74,52 +74,32 @@ void mainInterface()
 /* 注册界面 */
 void loginInterface()
 {
-    system("clear");
     
-    printf("请输入您的账号：");
-    int accNum;
-    scanf("%d", &accNum);
-    
-    printf("请输入您的密码：");
-    int passWd;
-    scanf("%d", &passWd);
     
     system("clear");
     printf("\033[1;47m╔═════════════════════════════════════════════════════════╗\033[0m\n");
     printf("\033[1;47m║                                                         ║\033[0m\n");
-    printf("\033[1;47m║                 恭喜您！账号注册完毕！                  ║\033[0m\n");
+    printf("\033[1;47m║                 恭喜您！账号注册完毕！                    ║\033[0m\n");
     printf("\033[1;47m║                                                         ║\033[0m\n");
-    printf("\033[1;47m║            您的账号为：%d                              ║\033[0m\n", accNum);
     printf("\033[1;47m║                                                         ║\033[0m\n");
-    printf("\033[1;47m║            您的密码为：%d                              ║\033[0m\n", passWd);
     printf("\033[1;47m║                                                         ║\033[0m\n");
-    printf("\033[1;47m║            请熟记您的账号、密码或拍照保存               ║\033[0m\n");
-    printf("\033[1;47m║            切勿将账号外接，以防从事非法活动             ║\033[0m\n");
     printf("\033[1;47m║                                                         ║\033[0m\n");
-    printf("\033[1;47m║                  (10秒后将返回)                         ║\033[0m\n");
+    printf("\033[1;47m║                                                         ║\033[0m\n");
+    printf("\033[1;47m║                请熟记您的账号、密码或拍照保存              ║\033[0m\n");
+    printf("\033[1;47m║               切勿将账号外接，以防从事非法活动             ║\033[0m\n");
+    printf("\033[1;47m║                                                         ║\033[0m\n");
+    printf("\033[1;47m║                   输入回车进入下一个页面                  ║\033[0m\n");
     printf("\033[1;47m║                                                         ║\033[0m\n");
     printf("\033[1;47m╚═════════════════════════════════════════════════════════╝\033[0m\n");
     
     
-    sleep(10);
-    // char any;
-    // getchar();
-    fristInterface();
+    char any;
+    getchar();
 }
 
 /* 登录界面 */
 void enterInterface()
 {
-    system("clear");
-    
-    printf("请输入您的账号：");
-    int accNum;
-    scanf("%d", &accNum);
-    
-    printf("请输入您的密码：");
-    int passWd;
-    scanf("%d", &passWd);
-    
     system("clear");
     printf("\033[1;47m╔═════════════════════════════════════════════════════════╗\033[0m\n");
     printf("\033[1;47m║                                                         ║\033[0m\n");
@@ -192,10 +172,16 @@ void logoutInterface()
 }
 
 /* 私聊界面 */
-void privateChatInterface();
+void privateChatInterface()
+{
+
+}
 
 /* 群聊界面 */
-void groupChatInterface();
+void groupChatInterface()
+{
+
+}
 
 /* 退出界面 */
 void quitChatInterface()
