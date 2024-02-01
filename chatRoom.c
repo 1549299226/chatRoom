@@ -407,38 +407,57 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
                 exit(-1);
             }
     
-    MYSQL_RES *res = mysql_use_result(conn);
+    chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    memset(friendMessage, 0, sizeof(friendMessage));
+    
+    
+
+
+    MYSQL_RES *res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES));
+    memset(res, 0, sizeof(res));
+    // 获取结果集
+    mysql_free_result(res);
+    res = mysql_use_result(conn);
     if (res != NULL) 
     {
         MYSQL_ROW row;
+        memset(row, 0, sizeof(row));
+        friendNode *node = (friendNode *)malloc(sizeof(friendNode));
         while ((row = mysql_fetch_row(res)) != NULL) 
         {
-            snprintf(Friend->accountNumber, sizeof(Friend->accountNumber), "%s", row[0]);
-            snprintf(Friend->name, sizeof(Friend->name), "%s", row[1]);
+            // 遍历结果集并输出数据
+            
+            snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
+            snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
 
                 // 处理完一行数据后的其他操作
+            
+            memset(node, 0, sizeof(node));
+            node = friendMessage;
+            balanceBinarySearchTreeInsert(client, node);
         }
+        // 释放结果集内存
         mysql_free_result(res);  // 释放查询结果集
-        balanceBinarySearchTreeInsert()
+        
     }
     return 0;
     
 }
 
 /*添加好友*/
-int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
+int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
     printf("请选择 1.昵称查找 2.用账号查找\n");
     int flag = 0;
     
-    chatRoomMessage *Friend =(chatRoomMessage *)malloc(sizeof(chatRoomMessage));
-    memset(Friend, 0, sizeof(Friend));
+    chatRoomMessage *friendMessage =(chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    memset(friendMessage, 0, sizeof(friendMessage));
     
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
 
-    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXIST %sFriend (accountNumber char[10] PRIMARY KEY, name text NOT NULL)", Friend->name);
+    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXIST %sFriend (accountNumber char[10] PRIMARY KEY, name text NOT NULL)", friendMessage->name);
     if (mysql_query(conn, buffer))
     {
         printf("系统错误，添加好友失败\n");
@@ -453,10 +472,10 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
         if (flag == 1)      //用账号查找  
         {
-            scanf("%s", Friend->accountNumber);
+            scanf("%s", friendMessage->accountNumber);
             
 
-            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE accountNumber = '%s'", Friend->accountNumber);
+            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE accountNumber = '%s'", friendMessage->accountNumber);
             if (mysql_query(conn, buffer))
             {
                 printf("查无此人\n");    
@@ -468,8 +487,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                           /*又可以改进的地方  可以改为查到将用户的信息打印出来，之后再确定要不要加此人为好友，
                                                 是，则向该用户发送一个信息是否接受该用户的好友申请，
                                                 选1接受 2不接受应该如此，现在完成的是点击加好友就直接加到了自己的好友表中是不太友好的*/
-                
-
                 MYSQL_RES *res = mysql_use_result(conn);
                 if (res != NULL) 
                 {
@@ -477,7 +494,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     if ((row = mysql_fetch_row(res)) != NULL) 
                     {
                         //snprintf(Friend.accountNumber, sizeof(Friend.accountNumber), "%s", row[0]);
-                        snprintf(Friend->name, sizeof(Friend->name), "%s", row[1]);
+                        snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
 
                             // 处理完一行数据后的其他操作
                     }
@@ -489,14 +506,17 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 if (flag == 1)
                 {
                     //创建好友表   有问题   好友表没有标记出来
-                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, Friend->accountNumber, Friend->name);
+                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
                         printf("系统错误，添加好友失败\n");
                         exit(-1);
                     }
+                    friendNode *node = (friendNode *)malloc(sizeof(friendNode));
+                    memset(node, 0, sizeof(node));
+                    node = friendMessage;
                     //插入到好友列表
-                    balanceBinarySearchTreeInsert(Info, Friend);
+                    balanceBinarySearchTreeInsert(client, friendMessage);
 
                 }    
                 else if (flag == 2)
@@ -551,9 +571,13 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                         printf("系统错误，添加好友失败\n");
                         exit(-1);
                     }
+                    friendNode *node = (friendNode *)malloc(sizeof(friendNode));
+                    memset(node, 0, sizeof(node));
+                    node = friendMessage;
+                    //插入到好友列表
+                    balanceBinarySearchTreeInsert(client, friendMessage);
                     //添加好友到树中
-                    balanceBinarySearchTreeInsert(Info, Friend);
-
+                    balanceBinarySearchTreeInsert(client, friendMessage);
                 }    
                 else if (flag == 2)
                 {
@@ -566,7 +590,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     exit(-1);
                 }
             }
-
         }
         else
         {
@@ -575,7 +598,8 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
         }
     }
     
-    
+    return 0;
+
 }
 
 /*看是否有人在线*/
@@ -602,13 +626,13 @@ int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, M
     Friend * data = Info;
     int flag = 0;
 
-    chatRoomMessage *Friend = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     printf("请输入要删除好友的姓名\n");
     scanf("%s", Friend->name);
     
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "SELECT name FROM %sFriend WHERE name = %s", Message->name, Friend->name);
+    snprintf(buffer, sizeof(buffer), "SELECT name FROM %sFriend WHERE name = %s", Message->name, friendMessage->name);
     if (mysql_query(conn, buffer))
     {
         printf("没有该好友\n");
@@ -619,7 +643,7 @@ int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, M
     
     if (flag == 1)
     {
-        snprintf(buffer, sizeof(buffer), "DELETE FROM %sFriend WHERE name = %s", Message->name, Friend->name);
+        snprintf(buffer, sizeof(buffer), "DELETE FROM %sFriend WHERE name = %s", Message->name, friendMessage->name);
         if (mysql_query(conn, buffer))
         {
             printf("系统错误,删除失败\n");
@@ -628,7 +652,7 @@ int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, M
         else 
         {   
             
-            if (balanceBinarySearchTreeDelete(Info, Friend->name) != 0)
+            if (balanceBinarySearchTreeDelete(Info, friendMessage->name) != 0)
             {
                 exit(-1);
             }
