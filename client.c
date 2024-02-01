@@ -71,6 +71,7 @@ int main()
     pthread_t tip;
     pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&sockfd);
 
+    
 
     while (1)
     {

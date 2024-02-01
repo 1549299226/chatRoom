@@ -1,38 +1,4 @@
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <error.h>
-
-#define SERVER_PORT 8080
-#define MAX_LISTEN  128
-#define LOCAL_IPADDRESS "127.0.0.1"
-#define BUFFER_SIZE 128
-
-int main()
-{
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sockfd == -1)
-    {
-        perror("socket error");
-        exit(-1);
-    }
-
-    struct sockaddr_in clientAddress;
-    memset((void *)&clientAddress, 0, sizeof(clientAddress));
-    clientAddress.sin_family = AF_INET;
-    clientAddress.sin_port = htons(SERVER_PORT);
-    clientAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    
-
-
-}#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -44,6 +10,9 @@ int main()
 #include <netinet/in.h>
 #include <error.h>
 #include <ctype.h>
+#include "chatRoom.h"
+
+
 
 #define SERVER_PORT 10000
 #define SERVER_IP "127.0.0.1"
@@ -79,7 +48,7 @@ void * pthread_Fun(int *arg)
             exit(-1);
         }
         printf("%s\n", recvBuffer);
-        scanf("%s", sendBuffer);
+        //scanf("%s", sendBuffer);
         
         ret = send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
         if (ret == -1)
@@ -94,13 +63,44 @@ void * pthread_Fun(int *arg)
         pthread_exit(NULL);
 }
 
+//是否存在此好友
+int existenceOrNot(void *arg1, void *arg2)
+{
+    chatRoomMessage *idx1 = (chatRoomMessage *) arg1;
+    chatRoomMessage *idx2 = (chatRoomMessage *) arg2;
+    // char * idx1 = (char *)arg1;
+    // char * idx2 = (char *)arg2;
+    int result = 0;
+    result = strcmp(idx1->name, idx2->name);
+
+    return result;
+}
+
+//自定义打印
+int printStruct(void *arg)
+{
+    int ret = 0;
+    chatRoomMessage* info = (chatRoomMessage*)arg;
+    printf("accountNumber:%s\tname:%s\n", 
+             info->accountNumber, info->name);
+    return ret;
+}
+
 int main()
 {
     /*将Ctrl+z设置为退出程序*/
     signal(SIGTSTP, SIG_IGN);
     signal(SIGTSTP, Off);
 
-    /*创建数据库*/
+    chatRoomMessage *Message = NULL;
+    json_object *obj = NULL;
+    Friend *Info = NULL;
+    MYSQL *conn = NULL;
+    friendNode *node = NULL;
+    /*初始化*/
+    chatRoomInit(Message, obj, Info, conn, existenceOrNot, printStruct, node);
+
+
     
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -142,6 +142,8 @@ int main()
     memset(&serverAddress, 0, sizeof(serverAddress));
     
     // socklen_t clientAddressLen = sizeof(clientAddress);
+    char recvBuffer[BUFFER_SIZE];
+    memset(recvBuffer, 0, sizeof(recvBuffer));
 
     while (1)
     {
@@ -151,6 +153,16 @@ int main()
             perror("accept error");
             exit(-1);
         }
+        /*注册*/
+
+        
+        if (chatRoomInsert(Message, obj, conn))
+        {
+            memset(recvBuffer, 0, sizeof(recvBuffer));
+            printf("注册失败\n");
+            continue;
+        }
+        
         pthread_t tip;
         pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);
         
