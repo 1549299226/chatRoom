@@ -19,7 +19,7 @@ enum STATUS_CODE
 /* 静态函数前置声明 */
 
 /* 两个值比较大小 */
-static int compareFunc(ELEMENTTYPE val1, ELEMENTTYPE val2);
+// static int compareFunc(ELEMENTTYPE val1, ELEMENTTYPE val2);
 /* 创建结点 */
 static AVLTreeNode *createAVLTreeNewNode(ELEMENTTYPE val, AVLTreeNode *parent);
 /* 根据指定的值获取二叉搜索树的结点 */
@@ -27,9 +27,9 @@ static AVLTreeNode * baseAppointValGetAVLTreeNode(BalanceBinarySearchTree *pBstr
 /* 判断二叉搜索树度为2 */
 static int balanceBinarySearchTreeNodeHasTwochildrens(AVLTreeNode *node);
 /* 判断二叉搜索树度为1 */
-static int balanceBinarySearchTreeNodeHasOnechildren(AVLTreeNode *node);
+// static int balanceBinarySearchTreeNodeHasOnechildren(AVLTreeNode *node);
 /* 判断二叉搜索树度为0 */
-static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node);
+// static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node);
 /* 前序遍历 */
 static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
 /* 中序遍历 */
@@ -39,7 +39,7 @@ static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
 /* 获取当前结点的前驱结点 */
 static AVLTreeNode * bstreeNodePreDecessor(AVLTreeNode *node);
 /* 获取当前结点的后继结点 */
-static AVLTreeNode * bstreeNodeSuccessor(AVLTreeNode *node);
+// static AVLTreeNode * bstreeNodeSuccessor(AVLTreeNode *node);
 /* 二叉搜索树删除指定的结点 */
 static int balanceBinarySearchTreeDeleteNode(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
 /* 添加结点之后要做的事情 */
@@ -165,16 +165,16 @@ static int balanceBinarySearchTreeNodeHasTwochildrens(AVLTreeNode *node)
 }
 
 /* 判断二叉搜索树度为1 */
-static int balanceBinarySearchTreeNodeHasOnechildren(AVLTreeNode *node)
-{
-    return ((node->left == NULL) && (node->right != NULL)) || ((node->left != NULL) && (node->right == NULL));
-}
+// static int balanceBinarySearchTreeNodeHasOnechildren(AVLTreeNode *node)
+// {
+//     return ((node->left == NULL) && (node->right != NULL)) || ((node->left != NULL) && (node->right == NULL));
+// }
 
 /* 判断二叉搜索树度为0 */
-static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node)
-{
-    return (node->left == NULL) && (node->right == NULL);
-}
+// static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node)
+// {
+//     return (node->left == NULL) && (node->right == NULL);
+// }
 
 /* 获取当前结点的前驱结点 */
 /* 中序遍历到结点的前一个结点 */
@@ -202,26 +202,26 @@ static AVLTreeNode * bstreeNodePreDecessor(AVLTreeNode *node)
 }
 
 /* 获取当前结点的后继结点 */
-static AVLTreeNode * bstreeNodeSuccessor(AVLTreeNode *node)
-{
-    if (node->right != NULL)
-    {
-        /* 后继结点是在右子树的左子树的左子树的左子树... */
-        AVLTreeNode *travelNode = node->right;
-        while (travelNode->left!= NULL)
-        {
-            travelNode = travelNode->left;
-        }
-        return travelNode;
-    }
+// static AVLTreeNode * bstreeNodeSuccessor(AVLTreeNode *node)
+// {
+//     if (node->right != NULL)
+//     {
+//         /* 后继结点是在右子树的左子树的左子树的左子树... */
+//         AVLTreeNode *travelNode = node->right;
+//         while (travelNode->left!= NULL)
+//         {
+//             travelNode = travelNode->left;
+//         }
+//         return travelNode;
+//     }
 
-    /* 程序执行到这个地方, 说明一定没有右子树。 那就需要向父结点找 */
-    while (node->parent != NULL && node == node->parent->right)
-    {
-        node = node->parent;
-    }
-    return node->parent;
-}
+//     /* 程序执行到这个地方, 说明一定没有右子树。 那就需要向父结点找 */
+//     while (node->parent != NULL && node == node->parent->right)
+//     {
+//         node = node->parent;
+//     }
+//     return node->parent;
+// }
 
 
 static AVLTreeNode *createAVLTreeNewNode(ELEMENTTYPE val, AVLTreeNode *parent)
@@ -297,6 +297,7 @@ static AVLTreeNode * AVLTreeNodeGetChildTaller(AVLTreeNode *node)
         {
             return node->right;
         }
+        return NULL;
     }
 }
 
@@ -461,6 +462,7 @@ static int AVLTreeNodeAdjustBalance(BalanceBinarySearchTree *pBstree, AVLTreeNod
 
         }
     }
+    return 0;
 }
 
 /* 删除结点之后要做的事情 */
@@ -619,6 +621,8 @@ static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
     preOrderTravel(pBstree, node->left);
     /* 右子树 */
     preOrderTravel(pBstree, node->right);
+
+    return ret;
 }
 /* 二叉搜索树的前序遍历 */
 int balanceBinarySearchTreePreOrderTravel(BalanceBinarySearchTree *pBstree)
@@ -650,6 +654,8 @@ static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
     pBstree->printFunc(node->data);
     /* 右子树 */
     inOrderTravel(pBstree, node->right);
+
+    return ret;
 }
 
 /* 二叉搜索树的中序遍历 */
@@ -675,6 +681,8 @@ static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
     postOrderTravel(pBstree, node->right);
     /* 根结点 */
     pBstree->printFunc(node->data);
+
+    return ret;
 }
 
 /* 二叉搜索树的后序遍历 */
@@ -768,7 +776,7 @@ int balanceBinarySearchTreeGetHeight(BalanceBinarySearchTree *pBstree, int *pHei
         return NULL_PTR;
     }
 
-    int ret;
+    int ret = 0;
     /* 判断是否为空树 */
     if (pBstree->root == NULL)
     {
@@ -971,7 +979,7 @@ int balanceBinarySearchTreeDestroy(BalanceBinarySearchTree *pBstree)
         return NULL_PTR;
     }
 
-    int ret;
+    int ret = 0;
     DoubleLinkListQueue *pQueue = NULL;
     doubleLinkListQueueInit(&pQueue);
 
