@@ -467,9 +467,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
     while (1)
     {
         scanf("%d", &flag);
-
-        
-
         if (flag == 1)      //用账号查找  
         {
             scanf("%s", friendMessage->accountNumber);
@@ -684,5 +681,8 @@ int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过�
 /*文件传输*/                                                         /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
+    printf("请输入你想要发送的文件地址:\n");
+    
+
 
 }
