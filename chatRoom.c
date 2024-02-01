@@ -142,10 +142,10 @@ int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, MYSQL
 //判断账号是否正确,正确返回0，错误返回-1
 static int accountRegistration(char * accountNumber , MYSQL * conn)        
 {
-    int len = 0;               //长度
+    int len = 0;             //长度
     int flag = 0;            //标记
     int count = 0;           //计数器
-
+    
     len = sizeof(accountNumber);
 
     while (count < len)                          
@@ -280,6 +280,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     
     int ret = 0;
     
+    /* 账号 */
     printf("请输入账号：(六位0-9的数字)\n");
     scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
@@ -291,7 +292,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     }
 
 
-    /**/
+    /* 密码 */
     printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
     scanf("%s", Message->password);
     ret = registrationPassword(Message->password);
@@ -299,10 +300,12 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     {
         return -1; 
     }
-
+    
+    /* 邮箱 */
     printf("请输入你的邮箱\n");
     scanf("%s", Message->mail);
     
+    /* 昵称 */
     printf("请输入昵称\n");
     scanf("%s", Message->name);
     ret = nameLegitimacy(Message->name, conn);
@@ -316,6 +319,8 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 
     snprintf(buffer, sizeof(buffer), "INSERT INTO chatRoom VALUES ('%s', '%s', '%s', '%s')", 
                 Message->accountNumber, Message->password, Message->name, Message->mail);
+
+    /* 把注册好的账号放进数据库 */
     if (mysql_query(conn, buffer))
     {
         exit(-1);
@@ -410,9 +415,10 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 memset(buffer, 0, sizeof(buffer));
                 chatRoomMessage fri; 
                 memset(&fri, 0, sizeof(fri));
-
-                MYSQL_RES *res = mysql_use_result(conn);
-                 if (res != NULL) 
+                MYSQL_RES *res = mysql_use_result(conn);   /*将查询到的结果集放到res中*/
+                int num_rows = mysql_num_rows(res);        /*获取结果集中的行数*/
+                MYSQL_RES row;
+                if ((row == mysql_fetch_row(res)) != NULL) 
                 {
                     MYSQL_ROW row;
                     if ((row = mysql_fetch_row(res)) != NULL) 
@@ -563,12 +569,25 @@ int chatRoomDestroy(chatRoomMessage *Message, json_object *obj, Friend * Info, M
 }
 
 /*注销账号*/
-int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
+int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到登录页面*/
 {
-    
+    printf("您确定要注销账号吗？\n");
+    printf("1、确定\n");
+    printf("2、返回\n");
+
+    int num;
+    scanf("%d", &num);
+
+    if (num == 1)
+    {
+        char buffer[BUFFER_SIZE];
+        memset(buffer, 0, sizeof(buffer));
+        snprintf(buffer, sizeof(buffer), "")
+
+    }
 }
 
-/*文件传输*/                                                         /*后面再加*/
+/*文件传输*/                                                          /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
 
