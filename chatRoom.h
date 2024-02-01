@@ -73,5 +73,11 @@ int chatRoomMessageLogOff(chatRoomMessage * Message, json_object * obj);       /
 /*文件传输*/  /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage * Message, json_object * obj); /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 
+int chatRoomObjConvert(char * bufeer, chatRoomMessage * Message, json_object * obj);   /*将Message转换成json格式的字符串进行传送*/
+
+int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj);  /*将json格式的字符串转换成原来Message*/
+
+int chatRoomClientMeassage(chatRoomMessage * Message, json_object * obj);   /**/
+
 
 #endif

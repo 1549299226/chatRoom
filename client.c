@@ -10,10 +10,11 @@
 #include <netinet/in.h>
 #include <error.h>
 #include "chatRoomInter.h"
+#include "threadpool.h"
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 10000
-#define SERVER_IP "172.27.132.115"
+#define SERVER_IP "172.23.179.110"
 
 void * pthread_Fun(int *arg)
 { 
@@ -73,27 +74,34 @@ int main()
     memset(&recvAddress, 0, sizeof(recvAddress));
     socklen_t recvAddressLen = sizeof(recvAddress);
 
-    char flag;
+    threadpool_t *pool = NULL;
+    int minThreads;
+    int maxThreads;
+    int queueCapacity;
+    threadPoolInit(pool, minThreads, maxThreads, queueCapacity);    
+    char * flag;
     
     recvAddress.sin_family = AF_INET;
     recvAddress.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &recvAddress.sin_addr.s_addr);
 
-    ret = connect(sockfd, (struct sockaddr *)&recvAddress, recvAddressLen); 
-    if (ret == -1)
-    {
-        perror("connect error");
-        exit(-1);
-    }
+    
+    welcomeInterface();
     
     while (1)
     {   
-        welcomeInterface();
-
-        scanf("%s", &flag);
-        send(sockfd, &flag, sizeof(flag), 0);
-        if (flag == '1')
+        ret = connect(sockfd, (struct sockaddr *)&recvAddress, recvAddressLen); 
+        if (ret == -1)
         {
+            perror("connect error");
+            exit(-1);
+        }
+
+        scanf("%s", flag);
+        
+        if (flag == "1")
+        {
+            send(sockfd, flag, sizeof(flag), 0);
             loginInterface();
             recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
             if (strncmp(recvBuffer, "注册成功", sizeof(recvBuffer) -1))
@@ -106,9 +114,9 @@ int main()
                 fristInterface();
             }
         }
-        else if(flag == '2')
+        else if(flag == "2")
         {
-
+            send(sockfd, flag, sizeof(flag), 0);
             recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
             if (strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
             {
@@ -121,10 +129,7 @@ int main()
             }
         }
         
-        
-        
-        pthread_t tip;
-        pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&sockfd);
+        threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &sockfd);
     }
     
     

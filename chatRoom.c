@@ -290,9 +290,6 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 {
     
     int ret = 0;
-    
-    printf("请输入账号：(六位0-9的数字)\n");
-    scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
@@ -303,7 +300,6 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 
     /**/
     printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
-    scanf("%s", Message->password);
     ret = registrationPassword(Message->password);
     if (ret == -1)
     {
@@ -311,10 +307,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     }
 
     printf("请输入你的邮箱\n");
-    scanf("%s", Message->mail);
-    
     printf("请输入昵称\n");
-    scanf("%s", Message->name);
     ret = nameLegitimacy(Message->name, conn);
     if (ret == -1)
     {
@@ -685,4 +678,42 @@ int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过�
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
 
+}
+
+int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj)
+{
+
+    struct json_object * accountNumberObj = json_object_new_string(Message->accountNumber);
+    json_object_object_add(obj, "accountNumber", accountNumberObj);
+
+    struct json_object * passwordObj = json_object_new_string(Message->password);
+    json_object_object_add(obj, "accountNumber", passwordObj);
+
+    struct json_object * nameObj = json_object_new_string(Message->name);
+    json_object_object_add(obj, "accountNumber", nameObj);
+
+    struct json_object * mailObj = json_object_new_string(Message->mail);
+    json_object_object_add(obj, "accountNumber", mailObj);
+
+    buffer = json_object_get_string(obj); 
+   
+    return 0;
+}
+
+int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj)
+{
+    obj = json_object_new_string(buffer);
+    struct json_object * accountNumberObj = json_object_object_get(obj, "accountNumber");
+    Message->accountNumber = json_object_get_string(accountNumberObj);
+
+    struct json_object * passwordObj = json_object_object_get(obj, "password");
+    Message->passwordObj = json_object_get_string(passwordObj);
+
+    struct json_object * nameObj = json_object_object_get(obj, "name");
+    Message->name = json_object_get_string(nameObj);
+
+    struct json_object * mailObj = json_object_object_get(obj, "mail");
+    Message->mail = json_object_get_string(mailObj);
+
+    return 0;
 }

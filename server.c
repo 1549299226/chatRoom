@@ -11,7 +11,7 @@
 #include <error.h>
 #include <ctype.h>
 #include "chatRoom.h"
-
+#include "threadpool.h"
 
 
 #define SERVER_PORT 10000
@@ -101,8 +101,11 @@ int main()
     Friend *client = NULL;
     chatRoomInit(Message, obj, Info, client, conn, existenceOrNot, printStruct, node);
 
-
-    
+    threadpool_t *pool = NULL;
+    int minThreads;
+    int maxThreads;
+    int queueCapacity;
+    threadPoolInit(pool, minThreads, maxThreads, queueCapacity);    
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -191,10 +194,8 @@ int main()
         }
         
         
-        
-        
-        pthread_t tip;
-        pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);
+        threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &acceptfd);
+        // pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);
         
         
 
