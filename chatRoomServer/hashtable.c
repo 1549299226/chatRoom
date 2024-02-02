@@ -7,13 +7,7 @@
 
 #define DEFAULT_SLOT_NUMS   10
 
-enum STATUS_CODE
-{
-    ON_SUCCESS,
-    NULL_PTR,
-    MALLOC_ERROR,
-    INVALID_ACCESS,
-};
+
 
 /* 函数前置声明 */
 static int calHashValue(HashTable *pHashtable, HASH_KEYTYPE key, int *slotKeyId);

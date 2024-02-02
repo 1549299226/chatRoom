@@ -13,6 +13,7 @@
 #include "chatRoom.h"
 #include "threadpool.h"
 #include "hashtable.h"
+#include <json-c/json_object.h>
 
 
 #define SERVER_PORT 9999

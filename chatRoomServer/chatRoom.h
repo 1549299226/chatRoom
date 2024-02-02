@@ -5,6 +5,9 @@
 #include <json-c/json.h>
 #include <mysql/mysql.h>
 #include <string.h>
+#include "hashtable.h"
+#include <json-c/json_object.h>
+
 
 typedef BalanceBinarySearchTree Friend;     //好友列表
 typedef AVLTreeNode friendNode;             //每个好友

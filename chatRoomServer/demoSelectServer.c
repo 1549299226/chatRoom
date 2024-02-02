@@ -1,26 +1,100 @@
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdlib.h>
-#include <netinet/in.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/select.h>
-#include <sys/time.h>
+#include <sys/socket.h>
+#include <pthread.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <time.h>
+#include <signal.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <error.h>
 #include <ctype.h>
+#include <sys/select.h>
+#include "chatRoom.h"
+#include "threadpool.h"
+#include "hashtable.h"
+#include <json-c/json_object.h>
 
 
-#define SERVER_PORT 8080
+#define SERVER_PORT 9999
 #define MAX_LISTEN  128
 
 #define BUFFER_SIZE     128
 
 /* 用单进程/线程 实现并发 */
 
+void Off(int arg)
+{
+    printf("服务端关闭。。。\n");
+    exit(-1);
+}
+
+void * pthread_Fun(int *arg)
+{
+    pthread_detach(pthread_self()); 
+    int acceptfd = *arg;
+    char recvBuffer[BUFFER_SIZE];
+    memset(recvBuffer, 0, sizeof(recvBuffer));
+
+    int ret;
+
+    char sendBuffer[BUFFER_SIZE];
+    memset(sendBuffer, 0, sizeof(sendBuffer));
+
+    while (1)
+    {
+        ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+        if (ret == -1)
+        {
+            perror("recv error");
+            exit(-1);
+        }
+        printf("%s\n", recvBuffer);
+        //scanf("%s", sendBuffer);
+        
+        ret = send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+        if (ret == -1)
+        {
+            perror("send error");
+            exit(-1);
+        }
+        memset(recvBuffer, 0, sizeof(recvBuffer));
+        memset(sendBuffer, 0, sizeof(sendBuffer));
+    }
+
+        pthread_exit(NULL);
+}
+
+//是否存在此好友
+int existenceOrNot(void *arg1, void *arg2)
+{
+    chatRoomMessage *idx1 = (chatRoomMessage *) arg1;
+    chatRoomMessage *idx2 = (chatRoomMessage *) arg2;
+    // char * idx1 = (char *)arg1;
+    // char * idx2 = (char *)arg2;
+    int result = 0;
+    result = strcmp(idx1->name, idx2->name);
+
+    return result;
+}
+
+//自定义打印
+int printStruct(void *arg)
+{
+    int ret = 0;
+    chatRoomMessage* info = (chatRoomMessage*)arg;
+    printf("accountNumber:%s\tname:%s\n", 
+             info->accountNumber, info->name);
+    return ret;
+}
+
+
 int main()
 {   
+    /*将Ctrl+z设置为退出程序*/
+    signal(SIGTSTP, SIG_IGN);
+    signal(SIGTSTP, Off);
     /* 创建套接字 句柄 */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1)
@@ -28,9 +102,26 @@ int main()
         perror("socket error");
         exit(-1);
     }
-    printf("sockfd:%d\n", sockfd);
+    //printf("sockfd:%d\n", sockfd);
 
-    
+    /*初始化*/
+    chatRoomMessage *Message = NULL;
+    json_object *obj = NULL;
+    Friend *Info = NULL;
+    MYSQL *conn = NULL;
+    friendNode *node = NULL;
+    Friend *client = NULL;
+    Friend * online = NULL;
+    HashTable **onlineTable = NULL;
+
+    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node, onlineTable);
+
+    threadpool_t *pool = NULL;
+    int minThreads;
+    int maxThreads;
+    int queueCapacity;
+    threadPoolInit(pool, minThreads, maxThreads, queueCapacity);
+
     /* 将本地的IP和端口绑定 */
     struct sockaddr_in localAddress;
     bzero((void *)&localAddress, sizeof(localAddress));
@@ -73,6 +164,12 @@ int main()
     fd_set tmpReadSet;
     /* 清除脏数据 */
     bzero(&tmpReadSet, sizeof(tmpReadSet));
+    char recvBuffer[BUFFER_SIZE];
+    memset(recvBuffer, 0, sizeof(recvBuffer));
+    
+    char sendBuffer[BUFFER_SIZE];
+    memset(sendBuffer, 0, sizeof(sendBuffer));
+    
     while (1)
     {
         /* 备份读集合 */
@@ -93,6 +190,51 @@ int main()
                 perror("accpet error");
                 break;
             }
+                        /*注册*/
+            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+            if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+            {
+                // pthread_mutex_lock(&message_mutex);
+                // pthread_cond_wait(&message_cond);
+                strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                chatRoomObjAnalyze(recvBuffer, Message, obj);
+                // pthread_cond_signal(&message_cond);
+                // pthread_mutex_lock(message_mutex);
+
+                if (!chatRoomInsert( sendBuffer, Message, obj, conn))
+                {
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    strncpy(sendBuffer, "注册失败", sizeof(sendBuffer) - 1);
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    continue;
+                }
+                else
+                {
+                    strncpy(sendBuffer, "注册成功", sizeof(sendBuffer) - 1);
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                }
+            }
+            else if (strncmp(recvBuffer, "2",sizeof(recvBuffer)))
+            {
+                if (!chatRoomLogIn(Message, obj, client, conn))
+                {
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    continue;
+                }
+                else
+                {
+                    strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                }
+            }
+        
             /* 将通信的句柄 放到读集合 */
             FD_SET(acceptfd, &readSet);
 
@@ -132,8 +274,8 @@ int main()
                 }
                 else
                 {
-                    printf("recv:%s\n", buffer);
-
+                    printf("%s\n", buffer);
+                    threadPoolAddTask(pool, (void *)pthread_Fun, (void *)&idx);
                     for (int jdx = 0; jdx < readBytes; jdx++)
                     {
                         buffer[jdx] = toupper(buffer[jdx]);
