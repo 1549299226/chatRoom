@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include "chatRoom.h"
 #include "threadpool.h"
+#include "hashtable.h"
 
 
 #define SERVER_PORT 9999
@@ -102,8 +103,9 @@ int main()
     friendNode *node = NULL;
     Friend *client = NULL;
     Friend * online = NULL;
+    HashTable **onlineTable = NULL;
 
-    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node);
+    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node, onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;

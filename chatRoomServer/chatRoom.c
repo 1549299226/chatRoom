@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <mysql/mysql.h>
 #include <sys/stat.h>
+#include "hashtable.h"
 
 #define PASSWORD_MAX 8  
 #define PASSWORD_MIN 6
@@ -20,7 +21,9 @@
 #define DBPASS "1"
 #define DBNAME "chatRoom"
 
+
 #define BUFFER_SIZE 100
+#define MAX_ONLINE 50
 
 enum FILE_STATUS
 {
@@ -51,9 +54,20 @@ static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法�
 
 static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断账号密码是否正确
 
+int hashTableCompare(void *arg1, void *arg2)
+{
+    chatRoomMessage *idx1 = (chatRoomMessage *) arg1;
+    chatRoomMessage *idx2 = (chatRoomMessage *) arg2;
+    // char * idx1 = (char *)arg1;
+    // char * idx2 = (char *)arg2;
+    int result = 0;
+    result = strcmp(idx1->name, idx2->name);
+
+    return result;
+}
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -164,8 +178,14 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     {
         exit(-1);
     }
+
+    
+    int onlineFriNum = MAX_ONLINE;
+    hashTableInit(onlineTable, onlineFriNum, hashTableCompare);
     
     printf("你好\n");
+
+
 
     return ret;
 }
@@ -458,6 +478,13 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
     return 0;
     
 }
+
+/* 在线列表的插入 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
+{
+    hashTableInsert(onlineTable, Message->name, sockfd);
+}
+
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
@@ -872,3 +899,4 @@ int chatRoomOnlineInformation(int sockfd, char *buffer, chatRoomMessage * Messag
 
 //     balanceBinarySearchTreeIsContainAppointVal(online, )
 // }
+

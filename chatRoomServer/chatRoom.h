@@ -44,7 +44,7 @@ enum STATUS_CODE
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node, HashTable ** onlineTable);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(char *buffer, chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
@@ -81,4 +81,6 @@ int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object
 
 int chatRoomOnlineInformation(int sockfd, char * buffer, chatRoomMessage * Message, Friend * online, json_object * obj);   /*用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
 
+/* 在线好友哈希表 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable);
 #endif

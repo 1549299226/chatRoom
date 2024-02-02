@@ -3,15 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-/* 状态码 */
-enum STATUS_CODE
-{
-    NOT_FIND = -1,
-    ON_SUCCESS,
-    NULL_PTR,
-    MALLOC_ERROR,
-    INVALID_ACCESS,
-};
+
 
 /* 静态函数只在本源文件(.c)使用 */
 /* 静态前置声明 */
@@ -446,4 +438,24 @@ int DoubleLinkListGetTailVal(DoubleLinkList * pList, ELEMENTTYPE *pVal)
 int DoubleLinkListGetAppointPosVal(DoubleLinkList * pList, int pos, ELEMENTTYPE *pVal)
 {
     /* todo... */
+}
+
+/* 根据结点找到对应的值 */
+DoubleLinkNode * DoubleLinkListAppointKeyValGetNode(DoubleLinkList * pList, ELEMENTTYPE val, int (*compareFunc)(ELEMENTTYPE, ELEMENTTYPE))
+{
+    int pos = 0;
+    DoubleLinkNode *travelNode = pList->head->next;
+
+    int cmp = 0;
+    while (travelNode != NULL)
+    {
+        cmp = compareFunc(val, travelNode->data);
+        if (cmp == 0)
+        {
+            return travelNode;
+        }
+        /* 遍历 */
+        travelNode = travelNode->next;
+    }
+    return NULL;
 }
