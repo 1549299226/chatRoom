@@ -68,7 +68,7 @@ int hashTableCompare(void *arg1, void *arg2)
 }
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -108,7 +108,8 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     bzero((*Message)->password, PASSWORD_MAX);
 
     // 创建一个json对象
-    obj = (json_object**)malloc(sizeof(json_object*)); 
+    // 创建一个json对象
+    *obj = (json_object*)malloc(sizeof(json_object*)); 
     *obj = json_object_new_object();
     if (obj == NULL) 
     {
@@ -142,32 +143,32 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     node->parent = NULL;
 
     /*初始化一个数据库*/
-    conn = mysql_init(NULL);        
-    if (conn == NULL)           /*判断是否正确*/
+    *conn = mysql_init(NULL);        
+    if (*conn == NULL)           /*判断是否正确*/
     {
         fprintf(stderr, "mysql_init failed\n");
         return MALLOC_ERROR;
     }
 
     /*连接数据库*/
-    if (mysql_real_connect(conn, DBHOST, DBUSER, DBPASS, NULL, 0, NULL, 0) == NULL) 
+    if (mysql_real_connect(*conn, DBHOST, DBUSER, DBPASS, NULL, 0, NULL, 0) == NULL) 
     {
-        fprintf(stderr, "mysql_real_connect failed: %s\n", mysql_error(conn));
-        mysql_close(conn);
+        fprintf(stderr, "mysql_real_connect failed: %s\n", mysql_error(*conn));
+        mysql_close(*conn);
         return MALLOC_ERROR;
     }
     
     /*创建数据库*/
-    if (mysql_query(conn, "CREATE DATABASE IF NOT EXISTS chatRoom"))
+    if (mysql_query(*conn, "CREATE DATABASE IF NOT EXISTS chatRoom"))
     {
-        fprintf(stderr, "Error %u: %s\n", mysql_errno(conn), mysql_error(conn));
+        fprintf(stderr, "Error %u: %s\n", mysql_errno(*conn), mysql_error(*conn));
     } 
     
     /*打开数据库*/
-    if (mysql_select_db(conn, DBNAME)) 
+    if (mysql_select_db(*conn, DBNAME)) 
     {
-        fprintf(stderr, "Error %u: %s\n", mysql_errno(conn), mysql_error(conn));
-        mysql_close(conn);
+        fprintf(stderr, "Error %u: %s\n", mysql_errno(*conn), mysql_error(*conn));
+        mysql_close(*conn);
         exit(1);
     } 
 
@@ -180,7 +181,7 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
                                  "name VARCHAR(100) NOT NULL, "
                                  "mail VARCHAR(100) NOT NULL)");
         
-    if (mysql_query(conn, buffer))
+    if (mysql_query(*conn, buffer))
     {
         exit(-1);
     }
@@ -205,8 +206,9 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
     int flag = 0;            //标记
     int count = 0;           //计数器
 
-    len = sizeof(accountNumber);
-
+    len = strlen(accountNumber);
+    printf("accountNumber:%s\n", accountNumber);
+    printf("---%d---\n", len);
     while (count < len)                          
     {
               /*保存账号长度*/
@@ -338,7 +340,7 @@ int chatRoomInsert(char * buffer, chatRoomMessage *Message, json_object *obj, MY
 {
     
     int ret = 0;
-    chatRoomObjAnalyze(buffer, Message, obj);
+    // chatRoomObjAnalyze(buffer, Message);
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
@@ -860,6 +862,7 @@ int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * o
 {
     // 将 json 格式的字符串转换为 json 对象
     obj = json_tokener_parse(buffer);
+    // printf("________OBJ:%p\n", obj);
     if (obj == NULL) 
     {
         fprintf(stderr, "json_tokener_parse failed\n");

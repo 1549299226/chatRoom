@@ -106,7 +106,7 @@ int main()
 
     /*初始化*/
     chatRoomMessage *Message = NULL;
-    json_object *obj = NULL;
+    json_object *obj;
     Friend *Info = NULL;
     MYSQL *conn = NULL;
     friendNode *node = NULL;
@@ -114,7 +114,7 @@ int main()
     Friend * online = NULL;
     HashTable **onlineTable = NULL;
 
-    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node, onlineTable);
+    chatRoomInit(&Message, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node, onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;
@@ -122,6 +122,9 @@ int main()
     int queueCapacity;
     threadPoolInit(pool, minThreads, maxThreads, queueCapacity);
 
+    int enableopt = 1;
+    //设置端口复用
+    int ret = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enableopt, sizeof(enableopt));
     /* 将本地的IP和端口绑定 */
     struct sockaddr_in localAddress;
     bzero((void *)&localAddress, sizeof(localAddress));
@@ -130,7 +133,7 @@ int main()
     localAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     
     socklen_t localAddressLen = sizeof(localAddress);
-    int ret = bind(sockfd, (struct sockaddr *)&localAddress, localAddressLen);
+    ret = bind(sockfd, (struct sockaddr *)&localAddress, localAddressLen);
     if (ret == -1)
     {
         perror("bind error");
@@ -202,6 +205,8 @@ int main()
                 
                 memset(recvBuffer, 0, sizeof(recvBuffer));
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n",recvBuffer);
+                printf("HERE----------\n");
                 chatRoomObjAnalyze(recvBuffer, Message, obj);
                 // pthread_cond_signal(&message_cond);
                 // pthread_mutex_lock(message_mutex);
