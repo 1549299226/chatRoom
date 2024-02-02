@@ -14,7 +14,7 @@
 #include "threadpool.h"
 
 
-#define SERVER_PORT 10000
+#define SERVER_PORT 9999
 #define SERVER_IP "127.0.0.1"
 #define LISTEN_SIZE 128
 #define BUFFER_SIZE 128
@@ -28,8 +28,7 @@ void Off(int arg)
 
 void * pthread_Fun(int *arg)
 {
-    pthread_detach(pthread_self());
-
+    pthread_detach(pthread_self()); 
     int acceptfd = *arg;
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
@@ -91,7 +90,8 @@ int main()
     /*将Ctrl+z设置为退出程序*/
     signal(SIGTSTP, SIG_IGN);
     signal(SIGTSTP, Off);
-    
+    pthread_mutex_t * message_mutex;
+    pthread_cond_t message_cond;
     /*初始化*/
     chatRoomMessage *Message = NULL;
     json_object *obj = NULL;
@@ -99,7 +99,9 @@ int main()
     MYSQL *conn = NULL;
     friendNode *node = NULL;
     Friend *client = NULL;
-    chatRoomInit(Message, obj, Info, client, conn, existenceOrNot, printStruct, node);
+    Friend * online = NULL;
+
+    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node);
 
     threadpool_t *pool = NULL;
     int minThreads;
@@ -162,9 +164,16 @@ int main()
         }
         /*注册*/
         recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-        if (!strncmp(recvBuffer, "1",sizeof(recvBuffer)))
+        if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
         {
-            if (!chatRoomInsert(Message, obj, conn))
+            pthread_mutex_lock(message_mutex);
+            strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
+
+            memset(sendBuffer, 0, sizeof(sendBuffer));
+            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            pthread_mutex_lock(message_mutex);
+
+            if (!chatRoomInsert( sendBuffer, Message, obj, conn))
             {
                 memset(recvBuffer, 0, sizeof(recvBuffer));
                 strncpy(sendBuffer, "注册失败", sizeof(sendBuffer) - 1);
