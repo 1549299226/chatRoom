@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <mysql/mysql.h>
 #include <sys/stat.h>
+#include "hashtable.h"
+#include <json-c/json_object.h>
 
 #define PASSWORD_MAX 8  
 #define PASSWORD_MIN 6
@@ -20,7 +22,9 @@
 #define DBPASS "1"
 #define DBNAME "chatRoom"
 
+
 #define BUFFER_SIZE 100
+#define MAX_ONLINE 50
 
 enum FILE_STATUS
 {
@@ -51,9 +55,20 @@ static int nameLegitimacy(char * name, MYSQL * conn);  //判断昵称的合法�
 
 static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断账号密码是否正确
 
+int hashTableCompare(void *arg1, void *arg2)
+{
+    chatRoomMessage *idx1 = (chatRoomMessage *) arg1;
+    chatRoomMessage *idx2 = (chatRoomMessage *) arg2;
+    // char * idx1 = (char *)arg1;
+    // char * idx2 = (char *)arg2;
+    int result = 0;
+    result = strcmp(idx1->name, idx2->name);
+
+    return result;
+}
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -93,8 +108,13 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     bzero((*Message)->password, PASSWORD_MAX);
 
     // 创建一个json对象
+    obj = (json_object**)malloc(sizeof(json_object*)); 
     *obj = json_object_new_object();
-    memset(*obj, 0, sizeof(obj));
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "Failed to create JSON object\n");
+        return -1;
+    }
     // 将用户列表初始化
     balanceBinarySearchTreeInit(&Info, compareFunc, printFunc);
 
@@ -154,7 +174,7 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     char buffer[BUFFER_SIZE << 2];
     memset(buffer, 0, sizeof(buffer));
     //创建表
-   snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXISTS chatRoom "
+    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXISTS chatRoom "
                                  "(accountNumber VARCHAR(100) PRIMARY KEY, "
                                  "password VARCHAR(100) NOT NULL, "
                                  "name VARCHAR(100) NOT NULL, "
@@ -164,8 +184,14 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
     {
         exit(-1);
     }
+
+    
+    int onlineFriNum = MAX_ONLINE;
+    hashTableInit(onlineTable, onlineFriNum, hashTableCompare);
     
     printf("你好\n");
+
+
 
     return ret;
 }
@@ -458,6 +484,13 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
     return 0;
     
 }
+
+/* 在线列表的插入 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
+{
+    hashTableInsert(onlineTable, *(int *)Message->name, sockfd);
+}
+
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
@@ -786,20 +819,37 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj) 
 {
 
-    struct json_object * accountNumberObj = json_object_new_string(Message->accountNumber);
-    json_object_object_add(obj, "accountNumber", accountNumberObj);
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "accountNumber", json_object_new_string(Message->accountNumber)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for accountNumber\n");
+        return -1;
+    }
 
-    struct json_object * passwordObj = json_object_new_string(Message->password);
-    json_object_object_add(obj, "password", passwordObj);
+    if (json_object_object_add(obj, "password", json_object_new_string(Message->password)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for password\n");
+        return -1;
+    }
 
-    struct json_object * nameObj = json_object_new_string(Message->name);
-    json_object_object_add(obj, "name", nameObj);
+    if (json_object_object_add(obj, "name", json_object_new_string(Message->name)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for name\n");
+        return -1;
+    }
 
-    struct json_object * mailObj = json_object_new_string(Message->mail);
-    json_object_object_add(obj, "mail", mailObj);
+    if (json_object_object_add(obj, "mail", json_object_new_string(Message->mail)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for mail\n");
+        return -1;
+    }
 
-    buffer = (char *)json_object_get_string(obj);
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
 
+    // 释放分配的内存
     json_object_put(obj);
     return 0;
 }
@@ -808,20 +858,52 @@ int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * o
 /*将json格式的字符串转换成原来Message*/
 int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj)
 {
-    obj = json_object_new_string(buffer);
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+
+    // 从 json 对象中读取字段
     struct json_object * accountNumberObj = json_object_object_get(obj, "accountNumber");
-    Message->accountNumber = (char *)json_object_get_string(accountNumberObj);
+    if (accountNumberObj != NULL) 
+    {
+        const char * accountNumber = json_object_get_string(accountNumberObj);
+        strncpy(Message->accountNumber, accountNumber, sizeof(Message->accountNumber) - 1);
+        Message->accountNumber[sizeof(Message->accountNumber) - 1] = '\0';
+    }
 
     struct json_object * passwordObj = json_object_object_get(obj, "password");
-    Message->password = (char *)json_object_get_string(passwordObj);
+    if (passwordObj != NULL) 
+    {
+        const char * password = json_object_get_string(passwordObj);
+        strncpy(Message->password, password, sizeof(Message->password) - 1);
+        Message->password[sizeof(Message->password) - 1] = '\0';
+    }
 
     struct json_object * nameObj = json_object_object_get(obj, "name");
-    Message->name = (char *)json_object_get_string(nameObj);
+    if (nameObj != NULL) 
+    {
+        const char * name = json_object_get_string(nameObj);
+        strncpy(Message->name, name, sizeof(Message->name) - 1);
+        Message->name[sizeof(Message->name) - 1] = '\0';
+    }
 
     struct json_object * mailObj = json_object_object_get(obj, "mail");
-    Message->mail = (char *)json_object_get_string(mailObj);
+    if (mailObj != NULL) 
+    {
+        const char * mail = json_object_get_string(mailObj);
+        strncpy(Message->mail, mail, sizeof(Message->mail) - 1);
+        Message->mail[sizeof(Message->mail) - 1] = '\0';
+    }
 
-    json_object_put(obj);
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
     return 0;
 }
 
@@ -872,3 +954,4 @@ int chatRoomOnlineInformation(int sockfd, char *buffer, chatRoomMessage * Messag
 
 //     balanceBinarySearchTreeIsContainAppointVal(online, )
 // }
+
