@@ -14,7 +14,7 @@
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 10000
-#define SERVER_IP "172.23.179.110"
+#define SERVER_IP "172.18.101.255"
 
 void * pthread_Fun(int *arg)
 { 
@@ -30,11 +30,7 @@ void * pthread_Fun(int *arg)
 
     
     while (1)
-    {   
-        
-
-    
-        
+    {          
         //scanf("%s", sendBuffer);
         send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
 

@@ -195,17 +195,10 @@ int main()
         
         
         threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &acceptfd);
-        // pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);
-        
-        
+        // pthread_create(&tip, NULL, (void *)pthread_Fun, (void *)&acceptfd);       
 
     }
     
-    
-
-
-
-
     close(sockfd);
 
 

@@ -6,6 +6,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <mysql/mysql.h>
+#include <sys/stat.h>
 
 #define PASSWORD_MAX 8  
 #define PASSWORD_MIN 6
@@ -290,6 +291,9 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 {
     
     int ret = 0;
+    
+    printf("请输入账号：(六位0-9的数字)\n");
+    scanf("%s", Message->accountNumber);          /*输入账号*/ 
 
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
@@ -300,6 +304,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
 
     /**/
     printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
+    scanf("%s", Message->password);
     ret = registrationPassword(Message->password);
     if (ret == -1)
     {
@@ -307,7 +312,10 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     }
 
     printf("请输入你的邮箱\n");
+    scanf("%s", Message->mail);
+    
     printf("请输入昵称\n");
+    scanf("%s", Message->name);
     ret = nameLegitimacy(Message->name, conn);
     if (ret == -1)
     {
@@ -671,12 +679,108 @@ int chatRoomMessageLogOff(chatRoomMessage *Message, json_object *obj) /*通过�
     
 }
 
-/*文件传输*/                                                         /*后面再加*/
-int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
+enum FILE_STATUS
 {
-    printf("请输入你想要发送的文件地址:\n");
-    
+    PATH_ERR = -1,
+    FILE_EXIT = 1,
+};
 
+enum CHOIVE
+{
+    ONE = 1,
+    Two
+};
+static int fileEixt(const char * filePath);
+
+/*判断输入的路径的文件是否存在*/
+static int fileEixt(const char * filePath)
+{
+    if (filePath == NULL)
+    {
+        return PATH_ERR;
+    }
+    if (access (filePath, F_OK) == 0)   /*文件存在且有对应的权限*/
+    {
+        return FILE_EXIT;
+    }
+    /*文件存在返回1 存在返回-1*/
+    return PATH_ERR;
+}
+
+/*输入地址的静态*/
+static int inputPath (char * path);
+
+/*输入地址的静态*/
+static int inputPath (char * path)
+{
+
+    scanf("%s", path);
+    int exit_ret = 0;
+    int choice = 0;
+    exit_ret = fileEixt(path);
+    while (exit_ret == -1)    /*文件不存在*/
+    {
+        printf("输入的文件路径不对或者文件不存在,请选择: 1.重新输入 2.退出\n");
+        switch (choice)
+        {
+        case ONE:   printf("请重新输入文件地址\n");
+                    scanf("%s", path);
+                    exit_ret = fileEixt(path);
+                    break;
+        case Two:   exit_ret = 2;    /*退出*/ 
+                    break;
+        default:
+                    printf("无效的选择，请重新输入\n");
+                    break;
+        }        
+        system("clear");
+    }
+    /*程序执行到这里有两种情况：1、exit_ret = 2退出 2、exit_ret = 1输入的文件名正确*/
+    return exit_ret;
+}
+
+/*文件传输*/                                                         /*后面再加*/
+int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) 
+/*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
+{
+
+    int ret = 0;
+    int choice = 0;
+    char * file_path = NULL;
+    struct stat fileStat;
+    while(ret == 0)
+    {
+        printf("请选择1、输入你想要发送的文件地址 2、退出返回上一个界面\n");
+        switch (choice)
+        {
+            case ONE:   ret = inputPath(file_path);  /*两种返回值 1、exit_ret = 2退出 2、exit_ret = 1输入的文件名正确*/
+                        break;
+            case Two:   ret = 2;
+                        break;
+            default:
+                        printf("无效的选择，请重新输入\n");
+                        ret = 0;
+                        break;
+        }        
+    }
+    /*程序执行到这里有两种情况：1、ret = 2退出 2、ret = 1输入的文件名正确*/
+    if (ret == 1)   /*输入的文件名正确*/
+    {
+        /*获取文件信息*/
+        if (stat(file_path, &fileStat) == -1) 
+        {
+            printf("无法获取文件信息\n");
+            
+        }
+        json_object_object_add(obj,"name" , json_object_new_string(file_path));
+        json_object_object_add(obj, "size", json_object_new_int64(fileStat.st_size));
+        
+    }
+    else if (ret == 2)  /*退出*/
+    {
+        return 0;
+    }
+    
 
 }
 
@@ -707,7 +811,7 @@ int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * o
     Message->accountNumber = json_object_get_string(accountNumberObj);
 
     struct json_object * passwordObj = json_object_object_get(obj, "password");
-    Message->passwordObj = json_object_get_string(passwordObj);
+    Message->password = json_object_get_string(passwordObj);
 
     struct json_object * nameObj = json_object_object_get(obj, "name");
     Message->name = json_object_get_string(nameObj);
