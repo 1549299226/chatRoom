@@ -90,8 +90,10 @@ int main()
     /*将Ctrl+z设置为退出程序*/
     signal(SIGTSTP, SIG_IGN);
     signal(SIGTSTP, Off);
-    pthread_mutex_t * message_mutex;
+    pthread_mutex_t message_mutex;
+    pthread_mutex_init(&message_mutex, NULL);
     pthread_cond_t message_cond;
+    pthread_cond_init(&message_cond, NULL);
     /*初始化*/
     chatRoomMessage *Message = NULL;
     json_object *obj = NULL;
@@ -166,13 +168,17 @@ int main()
         recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
         if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
         {
-            pthread_mutex_lock(message_mutex);
-            pthread_cond_
+            // pthread_mutex_lock(&message_mutex);
+            // pthread_cond_wait(&message_cond);
             strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
             memset(sendBuffer, 0, sizeof(sendBuffer));
             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-            pthread_cond_git 
-            pthread_mutex_lock(message_mutex);
+            
+            memset(recvBuffer, 0, sizeof(recvBuffer));
+            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+            chatRoomObjAnalyze(recvBuffer, Message, obj);
+            // pthread_cond_signal(&message_cond);
+            // pthread_mutex_lock(message_mutex);
 
             if (!chatRoomInsert( sendBuffer, Message, obj, conn))
             {
