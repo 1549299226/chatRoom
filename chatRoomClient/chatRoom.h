@@ -20,16 +20,16 @@ typedef struct chatRoomMessage
 } chatRoomMessage;
 
 
-enum SELECT
-{
-    BUILT = 1,
-    SEEK,
-    DELETE,
-    MODIFY,
-    VIEW_ALL,
-    SIX,
-    QUIT
-};
+// enum SELECT
+// {
+//     BUILT = 1,
+//     SEEK,
+//     DELETE,
+//     MODIFY,
+//     VIEW_ALL,
+//     SIX,
+//     QUIT
+// };
 
 /* 状态码 */
 enum STATUS_CODE
@@ -44,10 +44,10 @@ enum STATUS_CODE
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage * Message, json_object * obj, Friend * Info, Friend *client, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
-int chatRoomInsert(chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
+int chatRoomInsert(char *buffer, chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 
 /*登录*/
 int chatRoomLogIn(chatRoomMessage * Message, json_object * obj, Friend *client, MYSQL * conn);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
@@ -77,7 +77,8 @@ int chatRoomObjConvert(char * bufeer, chatRoomMessage * Message, json_object * o
 
 int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj);  /*将json格式的字符串转换成原来Message*/
 
-int chatRoomClientMeassage(chatRoomMessage * Message, json_object * obj);   /**/
+int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object * obj);   /*将客户端的信息传入json*/
 
+int chatRoomOnlineInformation(int sockfd, char * buffer, chatRoomMessage * Message, Friend * online, json_object * obj);   /*用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
 
 #endif

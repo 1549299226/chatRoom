@@ -32,53 +32,55 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage *Message, json_object *obj, Friend *Info, Friend *client, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
 {
     int ret = 0;
 
-    Message = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    (*Message) = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    memset((*Message), 0, sizeof(Message));
     /*初始化姓名*/
-    Message->name = (char *)malloc(sizeof(char) * NAMESIZE);
-    if (Message->name == NULL)
+    (*Message)->name = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*Message)->name == NULL)
     {
         return MALLOC_ERROR;
     }
     /*清楚脏数据*/
-    bzero(Message->name, sizeof(char) * NAMESIZE);
+    bzero((*Message)->name, sizeof(char) * NAMESIZE);
 
     /*账号初始化*/
-    Message->accountNumber = (char *)malloc(sizeof(char) * ACCOUNTNUMBER);
-    if (Message->accountNumber == NULL)
+    (*Message)->accountNumber = (char *)malloc(sizeof(char) * ACCOUNTNUMBER);
+    if ((*Message)->accountNumber == NULL)
     {
         return MALLOC_ERROR;
     }
-    bzero(Message->accountNumber, sizeof(char) * ACCOUNTNUMBER);
+    bzero((*Message)->accountNumber, sizeof(char) * ACCOUNTNUMBER);
 
     /*邮箱初始化*/
-    Message->mail = (char *)malloc(sizeof(char) * MAILSIZE);
-    if (Message->mail == NULL)
+    (*Message)->mail = (char *)malloc(sizeof(char) * MAILSIZE);
+    if ((*Message)->mail == NULL)
     {
         return MALLOC_ERROR;
     }
-    bzero(Message->mail, sizeof(char) * MAILSIZE);
+    bzero((*Message)->mail, sizeof(char) * MAILSIZE);
 
     /*密码初始化*/
-    Message->password = (char *)malloc(sizeof(char) * PASSWORD_MAX);
-    if (Message->password == NULL)
+    (*Message)->password = (char *)malloc(sizeof(char) * PASSWORD_MAX);
+    if ((*Message)->password == NULL)
     {
         return MALLOC_ERROR;
     }
-    bzero(Message->password, PASSWORD_MAX);
+    bzero((*Message)->password, PASSWORD_MAX);
 
     // 创建一个json对象
-    obj = json_object_new_object();
+    *obj = json_object_new_object();
+    memset(obj, 0, sizeof(obj));
 
     // 将用户列表初始化
     balanceBinarySearchTreeInit(&Info, compareFunc, printFunc);
 
     balanceBinarySearchTreeInit(&client, compareFunc, printFunc);
 
-
+    balanceBinarySearchTreeInit(&online, compareFunc, printFunc);
     // 初始化一个好友结点
     node = (friendNode *)malloc(sizeof(friendNode));
     if (node == NULL)
@@ -286,11 +288,11 @@ static int nameLegitimacy(char * name, MYSQL * conn)
 }
 
 /*注册*/    //注册成功返回0， 失败返回-1
-int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
+int chatRoomInsert(char * buffer, chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 {
     
     int ret = 0;
-
+    chatRoomObjAnalyze(buffer, Message, obj);
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
@@ -298,7 +300,7 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
     }
 
 
-    /**/
+
     printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
     ret = registrationPassword(Message->password);
     if (ret == -1)
@@ -314,12 +316,12 @@ int chatRoomInsert(chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*�
         return -1;
     }
     
-    char buffer[BUFFER_SIZE];
-    memset(buffer, 0, sizeof(buffer));
+    char buf[BUFFER_SIZE];
+    memset(buf, 0, sizeof(buf));
 
-    snprintf(buffer, sizeof(buffer), "INSERT INTO chatRoom VALUES ('%s', '%s', '%s', '%s')", 
+    snprintf(buf, sizeof(buf), "INSERT INTO chatRoom VALUES ('%s', '%s', '%s', '%s')", 
                 Message->accountNumber, Message->password, Message->name, Message->mail);
-    if (mysql_query(conn, buffer))
+    if (mysql_query(conn, buf))
     {
         exit(-1);
     }
@@ -680,40 +682,93 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 
 }
 
-int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj)
+/*将Message转换成json格式的字符串进行传送*/
+int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj) 
 {
 
     struct json_object * accountNumberObj = json_object_new_string(Message->accountNumber);
     json_object_object_add(obj, "accountNumber", accountNumberObj);
 
     struct json_object * passwordObj = json_object_new_string(Message->password);
-    json_object_object_add(obj, "accountNumber", passwordObj);
+    json_object_object_add(obj, "password", passwordObj);
 
     struct json_object * nameObj = json_object_new_string(Message->name);
-    json_object_object_add(obj, "accountNumber", nameObj);
+    json_object_object_add(obj, "name", nameObj);
 
     struct json_object * mailObj = json_object_new_string(Message->mail);
-    json_object_object_add(obj, "accountNumber", mailObj);
+    json_object_object_add(obj, "mail", mailObj);
 
-    buffer = json_object_get_string(obj); 
-   
+    buffer = (char *)json_object_get_string(obj);
+
+    json_object_put(obj);
     return 0;
 }
 
+
+/*将json格式的字符串转换成原来Message*/
 int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj)
 {
     obj = json_object_new_string(buffer);
     struct json_object * accountNumberObj = json_object_object_get(obj, "accountNumber");
-    Message->accountNumber = json_object_get_string(accountNumberObj);
+    Message->accountNumber = (char *)json_object_get_string(accountNumberObj);
 
     struct json_object * passwordObj = json_object_object_get(obj, "password");
-    Message->passwordObj = json_object_get_string(passwordObj);
+    Message->password = (char *)json_object_get_string(passwordObj);
 
     struct json_object * nameObj = json_object_object_get(obj, "name");
-    Message->name = json_object_get_string(nameObj);
+    Message->name = (char *)json_object_get_string(nameObj);
 
     struct json_object * mailObj = json_object_object_get(obj, "mail");
-    Message->mail = json_object_get_string(mailObj);
+    Message->mail = (char *)json_object_get_string(mailObj);
+
+    json_object_put(obj);
+    return 0;
+}
+
+/*将客户端的信息传入json*/ 
+int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object * obj) 
+{
+    printf("请输入账号\n");
+    scanf("%s", Message->accountNumber);
+    printf("请输入密码\n");
+    scanf("%s", Message->password);
+    printf("请输入昵称\n");
+    scanf("%s", Message->name);
+    printf("请输入邮箱\n");
+    scanf("%s", Message->mail);
+
+    chatRoomObjConvert(buffer, Message, obj);
+    /*将输入的字符转成json型的字符串*/
 
     return 0;
 }
+
+int chatRoomOnlineInformation(int sockfd, char *buffer, chatRoomMessage * Message, Friend * online, json_object * obj)/*在服务器中用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
+{
+    chatRoomObjAnalyze(buffer, Message, obj);
+
+    // struct json_object * onlineObj = (json_object *)malloc(sizeof(json_object));
+    // memset(onlineObj, 0, sizeof(onlineObj));
+
+
+    // struct json_object * nameObj = json_object_new_string(Message->name);
+    // json_object_object_add(onlineObj, "name", nameObj);
+
+    // struct json_object * sockfdObj = json_object_new_int64(sockfd);
+    // json_object_object_add(onlineObj, "fd", sockfdObj);
+
+
+    // /*这里有问题如何唯一标识每一个用户在树中的位置*/
+    // // char *onlineBuf = (char *)json_object_get_string(obj);
+    // balanceBinarySearchTreeInsert(online, onlineObj);
+
+    return 0;
+}
+
+// int chatRoomOnlineConversion(json_object * onlineObj, Friend * online, int *sockfd)/*在服务其中找到相应的人员通过*/
+// {
+//     struct json_object *obj = (json_object *)malloc(sizeof(json_object));
+//     memset(obj, 0, sizeof(obj));
+
+//     balanceBinarySearchTreeIsContainAppointVal(online, )
+// }
