@@ -167,10 +167,11 @@ int main()
         if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
         {
             pthread_mutex_lock(message_mutex);
+            pthread_cond_
             strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
-
             memset(sendBuffer, 0, sizeof(sendBuffer));
             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            pthread_cond_git 
             pthread_mutex_lock(message_mutex);
 
             if (!chatRoomInsert( sendBuffer, Message, obj, conn))
