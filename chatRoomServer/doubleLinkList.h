@@ -2,6 +2,15 @@
 #define __DoubleLinkList_H_
 #include "common.h"
 
+enum STATUS_CODE
+{
+    NOT_FIND = -1,
+    ON_SUCCESS,
+    NULL_PTR,
+    MALLOC_ERROR,
+    INVALID_ACCESS,
+};
+
 /* 链表初始化 */
 int DoubleLinkListInit(DoubleLinkList **pList);
 
@@ -46,4 +55,7 @@ int DoubleLinkListGetTailVal(DoubleLinkList * pList, ELEMENTTYPE *pVal);
 
 /* 获取链表 指定位置的值 */
 int DoubleLinkListGetAppointPosVal(DoubleLinkList * pList, int pos, ELEMENTTYPE *pVal);
+
+/* 根据结点找到对应的值 */
+DoubleLinkNode * DoubleLinkListAppointKeyValGetNode(DoubleLinkList * pList, ELEMENTTYPE val, int (*compareFunc)(ELEMENTTYPE, ELEMENTTYPE));
 #endif
