@@ -56,15 +56,15 @@ int chatRoomLogIn(chatRoomMessage * Message, json_object * obj, Friend *client, 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 
-/*输入名字判断好友是否存在和是否在线*/
-int friendIsExit(Friend *Info, ELEMENTTYPE data);
+/*输入名字判断好友是否存在*/
+int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name);
 
 
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage * Message, json_object * obj);    /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 
 /*建立私聊的联系*/
-int chatRoomPrivateChat(chatRoomMessage * Message, json_object * obj);   /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/
+int chatRoomPrivateChat( char * chatMsg, int sockfd) ; /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/
 
 /*建立一个群聊的联系，建立完后将其存储起来*/
 int chatRoomGroupChat(chatRoomMessage * Message, json_object * obj);     /*通过UDP进行群发，一些人能够接到*/   /*有点问题后面再想*/

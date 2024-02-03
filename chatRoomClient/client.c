@@ -175,26 +175,104 @@ int main()
                 enterInterface();
             }
         }
+
+        /*聊天功能*/
         else if (!strncmp(flag, "3", sizeof(flag)))
         {
+            memset(recvBuffer, 0, sizeof(recvBuffer));
+            //send(sockfd, flag, sizeof(flag), 0);
+
             printf("请选择1、群聊 2、私聊 \n");
             scanf("%s", flag);
             if (!strncmp(flag, "1", sizeof(flag)))
             {
-
+                /*群聊 to do..*/
             }
+
+            /*私聊*/
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
+                /*好友的名字*/
+                char * name = NULL;
+                memset(Message, 0, sizeof(Message));    /*先清零*/
                 printf("以下是所有好友的信息:\n");
-                balanceBinarySearchTreeInOrderTravel(Info);
-
-                printf("1、输入私聊对象的名字进行聊天\n");
-                printf("2、退出返回上一界面\n");
-                scanf("%s", flag);
-
-                if (!strncmp(flag, "1", sizeof(flag)))
+                balanceBinarySearchTreeInOrderTravel(client);
+                while (1)
                 {
-                    
+                    printf("1、输入私聊对象的名字进行聊天\n");
+                    printf("2、退出返回上一界面\n");
+                    scanf("%s", flag);
+
+                    if (!strncmp(flag, "1", sizeof(flag)))
+                    {
+                        /*先清零缓冲区*/
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        if (friendIsExit(client, Message, name) == 1) /*好友存在时*/
+                        {
+                            /*发送好友的名字到服务端*/
+                            strncpy(sendBuffer, name, sizeof(name));
+                            ret = send(sockfd, sendBuffer, sizeof(flag), 0);
+                            if (ret < 0)      /*发送失败*/
+                            {
+                                perror("send Is the friend online error");
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                continue;
+                            }
+                            /*清空缓冲区*/
+                            memset(recvBuffer, 0, sizeof(recvBuffer));
+                            /*接收好友是否在线的信息*/
+                            ret = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                            if (ret == -1) 
+                            {
+                                    perror("recv error");  // 打印错误信息
+                                    printf("接收错误，返回上一级\n");
+                                    continue;
+                                    // 处理接收错误的情况
+                            } 
+                            else if (ret == 0) 
+                            {
+                                printf("Connection closed by peer\n");  // 连接被关闭
+                                    // 处理连接关闭的情况
+                                printf("连接关闭错误，返回上一级\n");
+                                continue;
+                            } 
+                            else 
+                            {
+                                    // 接收到数据成功
+                                //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
+                                if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
+                                {
+                                    char * chatMsg = NULL;
+                                    /*发送消息  to do ..*/
+                                    chatRoomPrivateChat(chatMsg, sockfd);
+                                }
+                                if (!strncmp(recvBuffer, "你没有好友 或者好友用户名不正确", sizeof(recvBuffer)))
+                                {
+                                    printf("你没有好友 或者好友用户名不正确, 返回上一级\n");
+                                    continue;
+                                }
+                                if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
+                                {
+                                    printf("此时好友不在线, 返回上一级\n");
+                                    continue;
+                                }
+                               
+                            }
+                        }
+
+                    }
+                    else if (!strncmp(flag, "2", sizeof(flag)))
+                    {
+                        mainInterface();
+                        break;
+                    }
+                    else 
+                    {
+                        printf("无效的输入，请重新输入\n");
+                        mainInterface();
+                        continue;
+                    }
+
                 }
 
             }
@@ -202,7 +280,7 @@ int main()
         else
         {
             printf("输入有误，请重新选择\n");
-                continue;
+            continue;
 
         }
 
