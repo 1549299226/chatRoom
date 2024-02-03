@@ -487,6 +487,28 @@ int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineT
     return ret;
 }
 
+/* 指定好友是否在线 */
+int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatRoomMessage *Message, int sockfd)
+{
+    int ret = 0;
+    if(balanceBinarySearchTreeIsContainAppointVal(client, Message))
+    {
+        if(chatRoomOnlineTable(Message, sockfd, onlineTable) == 0)
+        {
+            printf("在线");
+        }
+        else
+        {
+            printf("离线");
+        }
+    }
+    else
+    {
+        printf("没有此好友！");
+    }
+    return ret;
+}
+
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
@@ -645,6 +667,8 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
     return 0;
 
 }
+
+
 
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
