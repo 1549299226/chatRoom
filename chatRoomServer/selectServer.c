@@ -112,9 +112,9 @@ int main()
     friendNode *node = NULL;
     Friend *client = NULL;
     Friend * online = NULL;
-    HashTable **onlineTable = NULL;
+    HashTable *onlineTable = NULL;
 
-    chatRoomInit(&Message, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node, onlineTable);
+    chatRoomInit(&Message, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;
@@ -193,52 +193,68 @@ int main()
                 perror("accpet error");
                 break;
             }
-                        /*注册*/
-            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-            if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+            while (1)
             {
-                // pthread_mutex_lock(&message_mutex);
-                // pthread_cond_wait(&message_cond);
-                strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
-                memset(sendBuffer, 0, sizeof(sendBuffer));
-                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                
-                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                /*注册*/
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                printf("%s\n",recvBuffer);
-                printf("HERE----------\n");
-                chatRoomObjAnalyze(recvBuffer, Message, obj);
-                // pthread_cond_signal(&message_cond);
-                // pthread_mutex_lock(message_mutex);
+                if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                {
+                    // pthread_mutex_lock(&message_mutex);
+                    // pthread_cond_wait(&message_cond);
+                    strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    printf("%s\n",recvBuffer);
+                    printf("HERE----------\n");
+                    chatRoomObjAnalyze(recvBuffer, Message, obj);
+                    // pthread_cond_signal(&message_cond);
+                    // pthread_mutex_lock(message_mutex);
 
-                if (!chatRoomInsert(Message, conn))
-                {
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                    strncpy(sendBuffer, "账号错误", sizeof(sendBuffer) - 1);
-                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                    continue;
+                    if (!chatRoomInsert(Message, conn))
+                    {
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        strncpy(sendBuffer, "账号错误", sizeof(sendBuffer) - 1);
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        continue;
+                    }
+                    else
+                    {
+                        strncpy(sendBuffer, "账号正确", sizeof(sendBuffer) - 1);
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        continue;
+                    }
                 }
-                else
+                else if (!strncmp(recvBuffer, "2",sizeof(recvBuffer)))     /*登录*/
                 {
-                    strncpy(sendBuffer, "账号正确", sizeof(sendBuffer) - 1);
+                    strncpy(sendBuffer, "请登录", sizeof(sendBuffer) - 1);
                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                    memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
+                    
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    printf("---recvBuffer:%s\n", recvBuffer);
+                    chatRoomObjAnalyze(recvBuffer, Message, obj);
+                    if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable))
+                    {
+
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        continue;
+                    }
+                    else
+                    {
+                        strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    }
                 }
             }
-            else if (strncmp(recvBuffer, "2",sizeof(recvBuffer)))
-            {
-                if (!chatRoomLogIn(Message, obj, client, conn))
-                {
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                    strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
-                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                    continue;
-                }
-                else
-                {
-                    strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
-                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                }
-            }
+            
+            
         
             /* 将通信的句柄 放到读集合 */
             FD_SET(acceptfd, &readSet);
