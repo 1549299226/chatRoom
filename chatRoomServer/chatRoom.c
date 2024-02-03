@@ -278,7 +278,7 @@ static int registrationPassword(char * password)     //判断密码是否正确,
         }
         count++;
     }
-    if (count <= 6 || count >= 8 )
+    if (count <= 6 || count >= 8)
     {
         printf("密码长度不符\n");
         flag++;
@@ -448,16 +448,16 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
     
 
 
-    MYSQL_RES *res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES));
-    memset(res, 0, sizeof(res));
+    MYSQL_RES *res = (MYSQL_RES *)malloc(sizeof(*res));
+    memset(res, 0, sizeof(*res));
     // 获取结果集
     mysql_free_result(res);
     res = mysql_use_result(conn);
     if (res != NULL) 
     {
         MYSQL_ROW row;
-        memset(row, 0, sizeof(row));
-        friendNode *node = (friendNode *)malloc(sizeof(friendNode));
+        memset(row, 0, sizeof(*row));
+        friendNode *node = (friendNode *)malloc(sizeof(*node));
         while ((row = mysql_fetch_row(res)) != NULL) 
         {
             // 遍历结果集并输出数据
@@ -482,7 +482,9 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
 {
+    int ret = 0;
     hashTableInsert(onlineTable, Message->name, sockfd);
+    return ret;
 }
 
 
