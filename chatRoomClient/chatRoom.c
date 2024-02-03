@@ -512,6 +512,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     node = (friendNode *)friendMessage;
                     //插入到好友列表
                     balanceBinarySearchTreeInsert(client, friendMessage);
+                    
 
                 }    
                 else if (flag == 2)
@@ -595,6 +596,71 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
     
     return 0;
 
+}
+
+/*获取指定好友的位置*/
+static void * baseAppointValGetaddressBookNode(Friend *friendInfo, ELEMENTTYPE data)
+{
+    friendNode * travelNode = friendInfo->root;
+    int cmp = 0;
+    while (travelNode != NULL)
+    {
+        cmp = friendInfo->compareFunc(data, travelNode->data);
+        if (cmp < 0)
+        {
+            travelNode = travelNode->left;
+        }
+        else if (cmp > 0)
+        {
+            travelNode = travelNode->right;
+        }
+        else
+        {
+            /* 找到 */
+            return travelNode->data;
+        }
+    }
+    return NULL;
+}
+
+/*输入名字判断好友是否存在和是否在线*/
+int friendIsExit(Friend *Info, ELEMENTTYPE data)
+{
+    if (Info == NULL)
+    {
+        printf("没有好友，退出");
+        return NULL_PTR;
+    }
+    chatRoomMessage * info = data;
+
+    char * flag = (char *)malloc(sizeof(char));
+    memset(flag, 0, sizeof(flag));
+
+    int flag = 0;
+    while (1)
+    {
+        printf("请输入你要查找的好友名字:\n");
+        scanf("%s", info->name);
+        info = (chatRoomMessage *) baseAppointValGetaddressBookNode(Info, data);
+        while(info == NULL)
+        {
+            printf("查无此人\n");
+            printf("请选择1、退出 2、重新输入");
+            scanf("%s", flag);
+            if (!strncmp(flag, "1", sizeof(flag)))
+            {
+                return QUIT;
+            }
+            else if (!strncmp(flag, "2", sizeof(flag)))
+            {
+                break;  /*跳出当前while循环*/
+            }
+        }
+        printf("找到好友信息:\n");
+        Info->printFunc(info);
+        
+    }
+    free (flag);
 }
 
 /*看是否有人在线*/

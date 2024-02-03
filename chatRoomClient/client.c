@@ -15,7 +15,7 @@
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 9999
-#define SERVER_IP "172.23.179.110"
+#define SERVER_IP "172.18.101.255"
 
 void * pthread_Fun(int *arg)
 { 
@@ -173,6 +173,30 @@ int main()
             {
                 printf("登录成功\n");
                 enterInterface();
+            }
+        }
+        else if (!strncmp(flag, "3", sizeof(flag)))
+        {
+            printf("请选择1、群聊 2、私聊 \n");
+            scanf("%s", flag);
+            if (!strncmp(flag, "1", sizeof(flag)))
+            {
+
+            }
+            else if (!strncmp(flag, "2", sizeof(flag)))
+            {
+                printf("以下是所有好友的信息:\n");
+                balanceBinarySearchTreeInOrderTravel(Info);
+
+                printf("1、输入私聊对象的名字进行聊天\n");
+                printf("2、退出返回上一界面\n");
+                scanf("%s", flag);
+
+                if (!strncmp(flag, "1", sizeof(flag)))
+                {
+                    
+                }
+
             }
         }
         else

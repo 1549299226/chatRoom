@@ -13,6 +13,7 @@
 #define MAILSIZE 20
 #define NAMESIZE 12
 #define ACCOUNTNUMBER 6
+#define FILE_PATH 50
 
 /*数据库的宏*/
 #define DBHOST "127.0.0.1"
@@ -701,12 +702,14 @@ static int inputPath (char * path)
 {
 
     scanf("%s", path);
+    
     int exit_ret = 0;
     int choice = 0;
     exit_ret = fileEixt(path);
     while (exit_ret == -1)    /*文件不存在*/
     {
         printf("输入的文件路径不对或者文件不存在,请选择: 1.重新输入 2.退出\n");
+        scanf("%d", &choice);
         switch (choice)
         {
         case ONE:   printf("请重新输入文件地址\n");
@@ -736,7 +739,7 @@ static int fileEixt(const char * filePath)
     {
         return FILE_EXIT;
     }
-    /*文件存在返回1 存在返回-1*/
+    /*文件存在返回1 不存在返回-1*/
     return PATH_ERR;
 }
 
@@ -745,11 +748,13 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 {
     int ret = 0;
     int choice = 0;
-    char * file_path = NULL;
+    char file_path[FILE_PATH];
+    memset(file_path, 0, FILE_PATH);
     struct stat fileStat;
     while(ret == 0)
     {
         printf("请选择1、输入你想要发送的文件地址 2、退出返回上一个界面\n");
+        scanf("%d", &choice);
         switch (choice)
         {
             case ONE:   ret = inputPath(file_path);  /*两种返回值 1、exit_ret = 2退出 2、exit_ret = 1输入的文件名正确*/
@@ -765,21 +770,27 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
     /*程序执行到这里有两种情况：1、ret = 2退出 2、ret = 1输入的文件名正确*/
     if (ret == 1)   /*输入的文件名正确*/
     {
+        /*打开文件*/
+        FILE *fp = fopen(file_path, "rb");
+        if(fp == NULL) 
+        {
+            return FILE_EXIT;
+        }
         /*获取文件信息*/
         if (stat(file_path, &fileStat) == -1) 
         {
             printf("无法获取文件信息\n");
-            
+            return 0;   /*退出*/
         }
         json_object_object_add(obj,"name" , json_object_new_string(file_path));
         json_object_object_add(obj, "size", json_object_new_int64(fileStat.st_size));
-        
+        fclose(fp);
     }
     else if (ret == 2)  /*退出*/
     {
         return 0;
     }
-    
+    return 0;
 }
 
 /*将Message转换成json格式的字符串进行传送*/
