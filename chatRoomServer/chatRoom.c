@@ -219,7 +219,8 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
             flag = 1;
         }
         count++;
-    }   
+    }  
+    printf("----count:%d----\n", count); 
     if (count != ACCOUNTNUMBER || flag != 0)   /*判断账号长度是满足条件*/
     {  
         if (count != ACCOUNTNUMBER)
@@ -249,16 +250,33 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
     memset(buffer, 0, sizeof(buffer));
 
     /*将账号信息放进占位符中，放到缓存器buffer*/
-    snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE  accountNumber = '%s'", accountNumber);
+    snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", accountNumber);
+    
+    printf("---%s\n", buffer);
+    int ret = mysql_query(conn, buffer);
     
     /*判断该账号是否在数据库中*/
-    if (mysql_query(conn, buffer))
+    if (ret == 0)       /*是否有该账号*/
     {
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
         return 0;
+        } 
+        else 
+        {
+            printf("已有该账号\n");
+            return -1;
+        } 
     }
-
-    printf("已有该账号\n");
-    return -1;
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
+    }
+    
+    
 }
 
 //判断密码是否合法
@@ -267,7 +285,7 @@ static int registrationPassword(char * password)     //判断密码是否正确,
     int letter = 0;           // 记录是否有字母
     int figure = 0;           // 记录是否有数字
     int specialCharacter = 0; // 记录是否有特殊字符
-    int len = sizeof(password);
+    int len = strlen(password);
     int count = 0;
     int flag = 0;
     while (count < len)             //判断密码合法否
@@ -325,10 +343,25 @@ static int nameLegitimacy(char * name, MYSQL * conn)
 
     snprintf(buffer, sizeof(buffer), "SELECT name FROM chatRoom WHERE name = '%s'", name);
 
-    if (mysql_query(conn, buffer))
+    /*返回值为零时查询成功*/
+    int ret = mysql_query(conn, buffer);
+    if (ret == 0)           /*判断其是否有该昵称*/
     {
-        printf("已有该昵称\n");
-        memset(name, 0, sizeof(name));
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+        return 0;
+        } 
+        else 
+        {
+            printf("已有该昵称\n");
+            return -1;
+        } 
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
         return -1;
     }
     
@@ -336,11 +369,12 @@ static int nameLegitimacy(char * name, MYSQL * conn)
 }
 
 /*注册*/    //注册成功返回0， 失败返回-1
-int chatRoomInsert(char * buffer, chatRoomMessage *Message, json_object *obj, MYSQL * conn) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
+int chatRoomInsert(chatRoomMessage *Message, MYSQL * conn) /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 {
     
     int ret = 0;
     // chatRoomObjAnalyze(buffer, Message);
+    printf("---conn:%p\n", conn);
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {

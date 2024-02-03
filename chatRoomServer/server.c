@@ -174,8 +174,9 @@ int main()
             // pthread_mutex_lock(&message_mutex);
             // pthread_cond_wait(&message_cond);
             strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
-            memset(sendBuffer, 0, sizeof(sendBuffer));
+            
             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            memset(sendBuffer, 0, sizeof(sendBuffer));
             
             memset(recvBuffer, 0, sizeof(recvBuffer));
             recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
@@ -183,7 +184,7 @@ int main()
             // pthread_cond_signal(&message_cond);
             // pthread_mutex_lock(message_mutex);
 
-            if (!chatRoomInsert( sendBuffer, Message, obj, conn))
+            if (chatRoomInsert(sendBuffer, Message, obj, conn))
             {
                 memset(recvBuffer, 0, sizeof(recvBuffer));
                 strncpy(sendBuffer, "注册失败", sizeof(sendBuffer) - 1);

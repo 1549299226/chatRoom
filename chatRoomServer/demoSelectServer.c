@@ -211,16 +211,16 @@ int main()
                 // pthread_cond_signal(&message_cond);
                 // pthread_mutex_lock(message_mutex);
 
-                if (!chatRoomInsert( sendBuffer, Message, obj, conn))
+                if (!chatRoomInsert(Message, conn))
                 {
                     memset(recvBuffer, 0, sizeof(recvBuffer));
-                    strncpy(sendBuffer, "注册失败", sizeof(sendBuffer) - 1);
+                    strncpy(sendBuffer, "账号错误", sizeof(sendBuffer) - 1);
                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                     continue;
                 }
                 else
                 {
-                    strncpy(sendBuffer, "注册成功", sizeof(sendBuffer) - 1);
+                    strncpy(sendBuffer, "账号正确", sizeof(sendBuffer) - 1);
                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                 }
             }
