@@ -522,7 +522,6 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         if (num_rows == 0) 
         {
             printf("你没有朋友，是个孤独的人！！\n");
-            return -1;
         } 
         else 
         {
@@ -558,12 +557,8 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
     
     
 
-    chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
-    memset(friendMessage, 0, sizeof(friendMessage));
-    
-    
-        
-
+    // chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    // memset(friendMessage, 0, sizeof(friendMessage));
     
 
     return 0;
@@ -1008,35 +1003,6 @@ int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object
     return 0;
 }
 
-int chatRoomOnlineInformation(int sockfd, char *buffer, chatRoomMessage * Message, Friend * online, json_object * obj)/*在服务器中用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
-{
-    chatRoomObjAnalyze(buffer, Message, obj);
-
-    // struct json_object * onlineObj = (json_object *)malloc(sizeof(json_object));
-    // memset(onlineObj, 0, sizeof(onlineObj));
-
-
-    // struct json_object * nameObj = json_object_new_string(Message->name);
-    // json_object_object_add(onlineObj, "name", nameObj);
-
-    // struct json_object * sockfdObj = json_object_new_int64(sockfd);
-    // json_object_object_add(onlineObj, "fd", sockfdObj);
-
-
-    // /*这里有问题如何唯一标识每一个用户在树中的位置*/
-    // // char *onlineBuf = (char *)json_object_get_string(obj);
-    // balanceBinarySearchTreeInsert(online, onlineObj);
-
-    return 0;
-}
-
-// int chatRoomOnlineConversion(json_object * onlineObj, Friend * online, int *sockfd)/*在服务其中找到相应的人员通过*/
-// {
-//     struct json_object *obj = (json_object *)malloc(sizeof(json_object));
-//     memset(obj, 0, sizeof(obj));
-
-//     balanceBinarySearchTreeIsContainAppointVal(online, )
-// }
 
 /*将客户端的信息传入json*/ 
 int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * obj) 
@@ -1045,13 +1011,100 @@ int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * 
     scanf("%s", Message->accountNumber);
     printf("请输入密码\n");
     scanf("%s", Message->password);
-    // printf("请输入昵称\n");
-    // scanf("%s", Message->name);
-    // printf("请输入邮箱\n");
-    // scanf("%s", Message->mail);
 
     chatRoomObjConvert(buffer, Message, obj);
-    /*将输入的字符转成json型的字符串*/
 
+    return 0;
+}
+
+
+/*将chatContent转换成json格式的字符串进行传送*/
+int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * obj) 
+{
+
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "friendName", json_object_new_string(chat->friendName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for friendName\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "myName", json_object_new_string(chat->myName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for myName\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "content", json_object_new_string(chat->content)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for content\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "time", json_object_new_string(chat->time)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for time\n");
+        return -1;
+    }
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+
+    // 释放分配的内存
+    json_object_put(obj);
+    return 0;
+}
+
+/*将json格式的字符串转换成原来chat*/
+int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+
+    // 从 json 对象中读取字段
+    struct json_object * myNameObj = json_object_object_get(obj, "accountNumber");
+    if (myNameObj != NULL) 
+    {
+        const char * myName = json_object_get_string(myNameObj);
+        strncpy(chat->myName, myName, sizeof(chat->myName) - 1);
+        chat->myName[sizeof(chat->myName) - 1] = '\0';
+    }
+
+    struct json_object * friendNameObj = json_object_object_get(obj, "password");
+    if (friendNameObj != NULL) 
+    {
+        const char * friendName = json_object_get_string(friendNameObj);
+        strncpy(chat->friendName, friendName, sizeof(chat->friendName) - 1);
+        chat->friendName[sizeof(chat->friendName) - 1] = '\0';
+    }
+
+    struct json_object * contentObj = json_object_object_get(obj, "name");
+    if (contentObj != NULL) 
+    {
+        const char * content = json_object_get_string(contentObj);
+        strncpy(chat->content, content, sizeof(chat->content) - 1);
+        chat->content[sizeof(chat->content) - 1] = '\0';
+    }
+
+    struct json_object * timeObj = json_object_object_get(obj, "mail");
+    if (timeObj != NULL) 
+    {
+        const char * time = json_object_get_string(timeObj);
+        strncpy(chat->time, time, sizeof(chat->time) - 1);
+        chat->time[sizeof(chat->time) - 1] = '\0';
+    }
+
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
     return 0;
 }

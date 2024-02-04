@@ -250,6 +250,7 @@ int main()
                     {
                         strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        break;
                     }
                 }
             }
