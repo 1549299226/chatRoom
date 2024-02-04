@@ -55,11 +55,18 @@ int chatRoomInsert(chatRoomMessage * Message, MYSQL * conn); /*账号不能跟�
 /*登录*/
 int chatRoomLogIn(int fd, chatRoomMessage * Message, Friend *client, MYSQL * conn, HashTable * onlineTable);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 
+/*输入好友名字 判断好友是否在线*/
+int serchFriendIfOnline(HashTable * online, char * name);
+
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 
-/*看是否有人在线*/
-int chatRoomOnlineOrNot(chatRoomMessage * Message, json_object * obj);    /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
+/* 在线列表的插入 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable);
+
+/*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
+/* 指定好友是否在线 */
+int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatRoomMessage *Message, int sockfd);
 
 /*建立私聊的联系*/
 int chatRoomPrivateChat(chatRoomMessage * Message, json_object * obj);   /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/

@@ -15,6 +15,7 @@
 #define MAILSIZE 20
 #define NAMESIZE 12
 #define ACCOUNTNUMBER 6
+#define FILE_PATH 50
 
 /*数据库的宏*/
 #define DBHOST "127.0.0.1"
@@ -732,10 +733,53 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
 }
 
-/*看是否有人在线*/
-int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
+
+
+/*输入好友名字 判断好友是否在线*/
+int serchFriendIfOnline(HashTable * online, char * name)
 {
-    
+    int sockfd_onlineFriend = 0;
+    if (online == NULL)
+    {
+        printf("无在线好友\n");
+        return 0;
+    }
+    if (name == NULL)
+    {
+        printf("好友名输入错误\n");
+        return 0;
+    }
+    int * mapVal = NULL;
+    if (! hashTableGetAppointKeyValue(online, name, mapVal))   /*找到在线好友的句柄*/ 
+    {
+        sockfd_onlineFriend = (int)mapVal;
+        return sockfd_onlineFriend;
+    } 
+    return -1;
+}
+
+/* 指定好友是否在线 */
+int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatRoomMessage *Message, int sockfd)
+{
+    int ret = 1;
+    if(balanceBinarySearchTreeIsContainAppointVal(client, Message))
+    {
+        if(chatRoomOnlineTable(Message, sockfd, onlineTable) == 0)
+        {
+            printf("在线");
+        }
+        else
+        {
+            printf("离线");
+            return -1;
+        }
+    }
+    else
+    {
+        printf("没有此好友！");
+        return 0;
+    }
+    return ret;
 }
 
 /*建立私聊的联系*/
@@ -816,12 +860,14 @@ static int inputPath (char * path)
 {
 
     scanf("%s", path);
+    
     int exit_ret = 0;
     int choice = 0;
     exit_ret = fileEixt(path);
     while (exit_ret == -1)    /*文件不存在*/
     {
         printf("输入的文件路径不对或者文件不存在,请选择: 1.重新输入 2.退出\n");
+        scanf("%d", &choice);
         switch (choice)
         {
         case ONE:   printf("请重新输入文件地址\n");
@@ -851,7 +897,7 @@ static int fileEixt(const char * filePath)
     {
         return FILE_EXIT;
     }
-    /*文件存在返回1 存在返回-1*/
+    /*文件存在返回1 不存在返回-1*/
     return PATH_ERR;
 }
 
@@ -860,11 +906,13 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 {
     int ret = 0;
     int choice = 0;
-    char * file_path = NULL;
+    char file_path[FILE_PATH];
+    memset(file_path, 0, FILE_PATH);
     struct stat fileStat;
     while(ret == 0)
     {
         printf("请选择1、输入你想要发送的文件地址 2、退出返回上一个界面\n");
+        scanf("%d", &choice);
         switch (choice)
         {
             case ONE:   ret = inputPath(file_path);  /*两种返回值 1、exit_ret = 2退出 2、exit_ret = 1输入的文件名正确*/
@@ -880,21 +928,27 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
     /*程序执行到这里有两种情况：1、ret = 2退出 2、ret = 1输入的文件名正确*/
     if (ret == 1)   /*输入的文件名正确*/
     {
+        /*打开文件*/
+        FILE *fp = fopen(file_path, "rb");
+        if(fp == NULL) 
+        {
+            return FILE_EXIT;
+        }
         /*获取文件信息*/
         if (stat(file_path, &fileStat) == -1) 
         {
             printf("无法获取文件信息\n");
-            
+            return 0;   /*退出*/
         }
         json_object_object_add(obj,"name" , json_object_new_string(file_path));
         json_object_object_add(obj, "size", json_object_new_int64(fileStat.st_size));
-        
+        fclose(fp);
     }
     else if (ret == 2)  /*退出*/
     {
         return 0;
     }
-    
+    return 0;
 }
 
 /*将Message转换成json格式的字符串进行传送*/
