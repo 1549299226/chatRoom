@@ -8,6 +8,9 @@
 #include <mysql/mysql.h>
 #include <sys/stat.h>
 #include <json-c/json_object.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #define PASSWORD_MAX 8  
 #define PASSWORD_MIN 6
 #define MAILSIZE 20
@@ -21,7 +24,7 @@
 #define DBNAME "chatRoom"
 
 #define BUFFER_SIZE 100
-
+#define SEND_BUFFER 140
 // struct 
 // {
 //     /* data */
@@ -536,6 +539,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     node = (friendNode *)friendMessage;
                     //插入到好友列表
                     balanceBinarySearchTreeInsert(client, friendMessage);
+                    
 
                 }    
                 else if (flag == 2)
@@ -621,6 +625,88 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
 }
 
+/*获取指定好友的位置*/
+static void * baseAppointValGetaddressBookNode(Friend *friendInfo, ELEMENTTYPE data)
+{
+    friendNode * travelNode = friendInfo->root;
+    int cmp = 0;
+    while (travelNode != NULL)
+    {
+        cmp = friendInfo->compareFunc(data, travelNode->data);
+        if (cmp < 0)
+        {
+            travelNode = travelNode->left;
+        }
+        else if (cmp > 0)
+        {
+            travelNode = travelNode->right;
+        }
+        else
+        {
+            /* 找到 */
+            return travelNode->data;
+        }
+    }
+    return NULL;
+}
+
+/*输入名字判断好友是否存在*/
+int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
+{
+    if (Info == NULL)
+    {
+        printf("您还没有好友，退出");
+        return -1;
+    }
+    chatRoomMessage * info = data;
+    int sockOnlinefd = 0;
+
+    char * flag = (char *)malloc(sizeof(char));
+    memset(flag, 0, sizeof(flag));
+
+    while (1)
+    {
+        printf("请输入你要查找的好友名字:\n");
+        scanf("%s", info->name);
+        info = (chatRoomMessage *) baseAppointValGetaddressBookNode(Info, data);
+        while(info == NULL)
+        {
+            printf("查无此人\n");
+            printf("请选择1、退出 2、重新输入");
+            scanf("%s", flag);
+            if (!strncmp(flag, "1", sizeof(flag)))
+            {
+                return -1;
+            }
+            else if (!strncmp(flag, "2", sizeof(flag)))
+            {
+                break;  /*跳出当前while循环*/
+            }
+            else
+            {
+                printf("无效的输入，重新输入\n");
+                continue;
+            }
+        }
+
+        printf("找到好友信息:\n");
+        name = info->name;
+        Info->printFunc(info);
+        break;
+        
+    //     if (chatRoomOnlineOrNot != -1)  /* to do...等接口*/
+    //     {
+    //         sockOnlinefd = chatRoomOnlineOrNot(info, obj);
+    //         return sockOnlinefd;
+    //     }
+    }
+    free (flag);
+    flag = NULL;
+    return 1;
+}
+
+
+
 /*看是否有人在线*/
 int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 {
@@ -628,13 +714,68 @@ int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一�
 }
 
 /*建立私聊的联系*/
-int chatRoomPrivateChat(chatRoomMessage *Message, json_object *obj) /*建立一个联系只有双方能够聊天*/ /*判断其书否在线， 是否存在这个好友*/
+int chatRoomPrivateChat( char * chatMsg, int sockfd) 
+/*建立一个联系只有双方能够聊天*/ /*判断其书否在线， 是否存在这个好友*/
 { 
+    while (1)
+    {
+        printf("请选择1、发消息 2、发文件 3、退出\n");
+        char * flag = (char *)malloc(sizeof(char));
+        memset(flag, 0, sizeof(flag));
+
+        char sendBuffer[SEND_BUFFER];
+        memset(sendBuffer, 0, sizeof(sendBuffer));
+        scanf("%s", flag);
+
+        int ret = 0;
+        while (1)
+        {
+            if (!strncmp(flag, "1", sizeof(flag)))
+            {
+                printf("1、请输入你要发送的消息(不超过140字符): 2、退出返回上一级\n");
+                if (!strncmp(flag, "1", sizeof(flag)))  /*输入发送的消息*/
+                {
+                    scanf("%s", chatMsg);   /*输入要发送的内容*/
+                    if(getchar() == '\n')
+                    {
+                        printf("输入的内容为空，请重新输入\n");
+                        continue;
+                    }
+                    strncpy(sendBuffer, chatMsg, sizeof(sendBuffer));
+                    ret = send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                    if (ret < 0)
+                    {
+                        perror("send error");
+                        printf("发送失败,返回上一级\n");
+                        continue;
+                    }
+                    else if (!strncmp(flag, "2", sizeof(flag))) 
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        printf("无效的输入，返回上一级\n");
+                        continue;
+                    }
+                }
+
+                
+            }
+            else if(!strncmp(flag, "2", sizeof(flag)))
+            {
+                /*发文件 to do..*/
+            }
+            else if (!strncmp(flag, "3", sizeof(flag)))
+            {
+                return -1;
+            }
+        }
+        free(flag);
+        }
     
+    return 0;
 }
-
-
-
 
 /*建立一个群聊的联系，建立完后将其存储起来*/
 int chatRoomGroupChat(chatRoomMessage *Message, json_object *obj) /*通过UDP进行群发，一些人能够接到*/ /*有点问题后面再想*/
