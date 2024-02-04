@@ -651,7 +651,7 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
             scanf("%s", flag);
             if (!strncmp(flag, "1", sizeof(flag)))
             {
-                return QUIT;
+                return -1;
             }
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
@@ -710,7 +710,7 @@ int chatRoomPrivateChat( char * chatMsg, int sockfd)
                 printf("1、请输入你要发送的消息(不超过140字符): 2、退出返回上一级\n");
                 if (!strncmp(flag, "1", sizeof(flag)))  /*输入发送的消息*/
                 {
-                    scanf("%s", chatMsg);
+                    scanf("%s", chatMsg);   /*输入要发送的内容*/
                     if(getchar() == '\n')
                     {
                         printf("输入的内容为空，请重新输入\n");
@@ -746,7 +746,7 @@ int chatRoomPrivateChat( char * chatMsg, int sockfd)
                 return -1;
             }
         }
-        free(free);
+        free(flag);
         }
     
     return 0;

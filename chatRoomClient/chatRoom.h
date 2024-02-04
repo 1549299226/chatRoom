@@ -34,7 +34,7 @@ typedef struct chatRoomMessage
 /* 状态码 */
 enum STATUS_CODE
 {
-    QUIT,
+    
     ON_SUCCESS,
     NULL_PTR,
     MALLOC_ERROR,

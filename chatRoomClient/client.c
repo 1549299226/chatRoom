@@ -242,6 +242,7 @@ int main()
                                 //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
                                 if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
                                 {
+                                    printf("好友在线\n");
                                     char * chatMsg = NULL;
                                     /*发送消息  to do ..*/
                                     chatRoomPrivateChat(chatMsg, sockfd);

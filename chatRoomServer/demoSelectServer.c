@@ -248,18 +248,22 @@ int main()
                 memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
                 strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
                 send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                
             }
             if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
             {
                 memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
                 strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
                 send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer)); 
             }
             if (ret = -1)
             {
                 memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
                 strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
                 send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer)); 
             }
 
             /* 将通信的句柄 放到读集合 */

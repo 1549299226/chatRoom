@@ -702,7 +702,7 @@ int serchFriendIfOnline(HashTable * online, char * name)
     }
     if (name == NULL)
     {
-        prinrf("好友名输入错误\n");
+        printf("好友名输入错误\n");
         return 0;
     }
     int * mapVal = NULL;
