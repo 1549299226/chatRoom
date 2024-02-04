@@ -5,6 +5,7 @@
 #include <json-c/json.h>
 #include <mysql/mysql.h>
 #include <string.h>
+#include <time.h>
 #include "hashtable.h"
 #include <json-c/json_object.h>
 
@@ -22,7 +23,14 @@ typedef struct chatRoomMessage
    
 } chatRoomMessage;
 
-
+//用于聊天的结构体
+typedef struct chatContent
+{
+    char * friendName;  //好友姓名
+    char * myName;      //本人姓名
+    void * content;     //聊天内容
+    time_t time;        //聊天时间
+}  chatContent;
 // enum SELECT
 // {
 //     BUILT = 1,
@@ -96,4 +104,9 @@ int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineT
 
 /*将客户端的信息传入json*/ 
 int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/*将chatContent转换成json格式的字符串进行传送*/
+int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * obj);
+
+int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
 #endif
