@@ -733,13 +733,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
 }
 
-/* 在线列表的插入 */
-int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
-{
-    int ret = 0;
-    hashTableInsert(onlineTable, Message->name, sockfd);
-    return ret;
-}
+
 
 /*输入好友名字 判断好友是否在线*/
 int serchFriendIfOnline(HashTable * online, char * name)
