@@ -5,6 +5,7 @@
 #include <json-c/json.h>
 #include <mysql/mysql.h>
 #include <string.h>
+#include <json-c/json_object.h>
 
 typedef BalanceBinarySearchTree Friend;     //好友列表
 typedef AVLTreeNode friendNode;             //每个好友
@@ -44,7 +45,7 @@ enum STATUS_CODE
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL * conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(char *buffer, chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
@@ -70,15 +71,29 @@ int chatRoomDestroy(chatRoomMessage * Message, json_object * obj, Friend * Info,
 /*注销账号*/
 int chatRoomMessageLogOff(chatRoomMessage * Message, json_object * obj);       /*通过你的账号信息，删除数据库中用户表中你的信息， 因为该表为主表要先删除附表中他的信息，删除完毕后释放通信句柄，退出到主页面*/
 
-/*文件传输*/  /*后面再加*/
-int chatRoomFileTransfer(chatRoomMessage * Message, json_object * obj); /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
+/*文件传输*/  /*后面再加*/ /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
+int chatRoomFileTransfer(chatRoomMessage * Message, json_object * obj); 
 
-int chatRoomObjConvert(char * bufeer, chatRoomMessage * Message, json_object * obj);   /*将Message转换成json格式的字符串进行传送*/
+/*将Message转换成json格式的字符串进行传送*/
+int chatRoomObjConvert(char * bufeer, chatRoomMessage * Message, json_object * obj);   
 
-int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj);  /*将json格式的字符串转换成原来Message*/
+ /*将json格式的字符串转换成原来Message*/
+int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * obj); 
 
-int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object * obj);   /*将客户端的信息传入json*/
+/*将客户端的信息传入json*/
+int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object * obj);   
 
-int chatRoomOnlineInformation(int sockfd, char * buffer, chatRoomMessage * Message, Friend * online, json_object * obj);   /*用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
+/*用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
+int chatRoomOnlineInformation(int sockfd, char * buffer, chatRoomMessage * Message, Friend * online, json_object * obj);   
+
+/*登陆的账号密码写入json*/
+int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/*将chatContent转换成json格式的字符串进行传送*/
+int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * obj);
+
+int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
+
+
 
 #endif

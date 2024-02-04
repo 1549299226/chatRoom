@@ -12,6 +12,8 @@
 #include "chatRoomInter.h"
 #include "threadpool.h"
 #include "chatRoom.h"
+#include <json-c/json_object.h>
+#include <json-c/json.h>
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 9999
@@ -90,7 +92,7 @@ int main()
     Friend *client = NULL;
     Friend * online = NULL;
 
-    chatRoomInit(&Message, &obj, Info, client, online, conn, existenceOrNot, printStruct, node); /*初始化*/
+    chatRoomInit(&Message, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
 
      
     
@@ -133,57 +135,90 @@ int main()
     char * flag = (char *)malloc(sizeof(char));
     memset(flag, 0, sizeof(flag));
 
-    while (1)
-    {   
-
-        scanf("%s", flag);
-        
-        if (!strncmp(flag, "1", sizeof(flag)))
-        {
+    
+        while (1)
+        {       
+            fristInterface();
+            scanf("%s", flag);
             
-            send(sockfd, flag, sizeof(flag), 0);
-            loginInterface();
-            recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-            printf("%s\n", recvBuffer);
-            memset(recvBuffer, 0, sizeof(recvBuffer));
-
-            chatRoomClientMeassage(userBuf, Message, obj);    /*将信息写入到userBuf中*/
-            send(sockfd, userBuf, sizeof(userBuf), 0);          /*将信息写入通信句柄中*/
-
-            recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);    /*读取是否通信成功*/
-            if (strncmp(recvBuffer, "注册成功", sizeof(recvBuffer) -1))
+            if (!strncmp(flag, "1", sizeof(flag)))
             {
-                continue;
+                
+                send(sockfd, flag, sizeof(flag), 0);    //写入选项
+
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer);
+                usleep(500);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                chatRoomClientMeassage(userBuf, Message, obj);    /*将信息写入到userBuf中*/
+                send(sockfd, userBuf, sizeof(userBuf), 0);          /*将信息写入通信句柄中*/
+
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);    /*读取是否通信成功*/
+                if (strncmp(recvBuffer, "注册成功", sizeof(recvBuffer) -1))  //注册失败进入if语句
+                {
+                    memset(Message->accountNumber, 0, sizeof(Message->accountNumber));
+                    memset(Message->name, 0, sizeof(Message->name));
+                    memset(Message->password, 0, sizeof(Message->password));
+                    memset(Message->mail, 0, sizeof(Message->mail));
+
+                    continue;
+                }
+                else
+                {
+                    printf("注册成功\n");
+                    loginInterface();
+                    flag = 0;
+                    continue;
+                }
+            }
+            else if(!strncmp(flag, "2", sizeof(flag)))
+            {   
+                system("clear");
+                send(sockfd, flag, sizeof(flag), 0);   //写入选项      
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);  //读取返回的
+                printf("%s\n", recvBuffer);
+                usleep(500);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                memset(userBuf, 0, sizeof(userBuf));
+
+                chatRoomClientLogIn(userBuf,Message, obj);
+                send(sockfd, userBuf, sizeof(userBuf), 0);
+
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                if (!strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
+                {
+                    memset(Message->accountNumber, 0, sizeof(Message->accountNumber));
+                    memset(Message->name, 0, sizeof(Message->name));
+                    memset(Message->password, 0, sizeof(Message->password));
+                    memset(Message->mail, 0, sizeof(Message->mail));
+                    printf("登陆失败\n");
+                    sleep(2);
+                    continue;
+                }
+                else
+                {
+                    printf("登录成功\n");
+                    sleep(2);
+                    enterInterface();
+                    break;
+                }
             }
             else
             {
-                printf("注册成功\n");
-                fristInterface();
+                printf("输入有误，请重新选择\n");
+                    continue;
+
             }
-        }
-        else if(!strncmp(flag, "2", sizeof(flag)))
-        {
-            send(sockfd, flag, sizeof(flag), 0);
-            recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-            if (strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
-            {
-                continue;
-            }
-            else
-            {
-                printf("登录成功\n");
-                enterInterface();
-            }
-        }
-        else
-        {
-            printf("输入有误，请重新选择\n");
-                continue;
 
         }
-
-        threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &sockfd);
-    }
+        
+        while (1)
+        {
+            threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &sockfd);
+        }
+        
+        
     
     
     close(sockfd);
