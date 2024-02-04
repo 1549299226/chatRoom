@@ -208,7 +208,6 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
 
     len = strlen(accountNumber);
     printf("accountNumber:%s\n", accountNumber);
-    printf("---%d---\n", len);
     while (count < len)                          
     {
               /*保存账号长度*/
@@ -220,7 +219,7 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
         }
         count++;
     }  
-    printf("----count:%d----\n", count); 
+
     if (count != ACCOUNTNUMBER || flag != 0)   /*判断账号长度是满足条件*/
     {  
         if (count != ACCOUNTNUMBER)
@@ -251,8 +250,6 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
 
     /*将账号信息放进占位符中，放到缓存器buffer*/
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", accountNumber);
-    
-    printf("---%s\n", buffer);
     int ret = mysql_query(conn, buffer);
     
     /*判断该账号是否在数据库中*/
@@ -373,8 +370,7 @@ int chatRoomInsert(chatRoomMessage *Message, MYSQL * conn) /*账号不能跟数�
 {
     
     int ret = 0;
-    // chatRoomObjAnalyze(buffer, Message);
-    printf("---conn:%p\n", conn);
+
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
@@ -383,15 +379,12 @@ int chatRoomInsert(chatRoomMessage *Message, MYSQL * conn) /*账号不能跟数�
 
 
 
-    printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
     ret = registrationPassword(Message->password);
     if (ret == -1)
     {
         return -1; 
     }
 
-    printf("请输入你的邮箱\n");
-    printf("请输入昵称\n");
     ret = nameLegitimacy(Message->name, conn);
     if (ret == -1)
     {
@@ -423,18 +416,55 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", Message->accountNumber);
-    if (mysql_query(conn, buffer))
+    // if (mysql_query(conn, buffer))
+    // {
+    //     printf("没有该用户\n");
+    //     exit(-1);
+    // }
+    int ret = mysql_query(conn, buffer);
+    
+    /*判断该账号是否在数据库中*/
+    if (ret == 0)       /*是否有该账号*/
     {
-        printf("没有该用户\n");
-        exit(-1);
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("没有该账号\n");
+            return -1;
+        } 
+        mysql_free_result(result);
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
     }
 
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s' and password = '%s'", Message->accountNumber, Message->password);
-    if (!mysql_query(conn, buffer))
+    ret = mysql_query(conn, buffer);
+    if (ret == 0)       /*是否有该账号*/
     {
-        printf("账号密码不匹配\n");
-        exit(-1);
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("账号密码不匹配\n");
+            return -1;
+        } 
+        else 
+        {
+            printf("账号密码正确登陆成功\n");
+            return 0;
+        }
+        mysql_free_result(result);
+
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
     }
 
     return 0;
@@ -483,61 +513,59 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
     /*查询登录人的所有好友，用以之后将其好友放入一个他专属的树中*/
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "SELECT * FROM Friend%s", Message->accountNumber);
-    if (mysql_query(conn, buffer))
+    
+    ret = mysql_query(conn, buffer);
+    if (ret == 0)
     {
-        printf("查无此人\n");
-        exit(-1);
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("你没有朋友，是个孤独的人！！\n");
+            return -1;
+        } 
+        else 
+        {
+            // 获取查询结果集
+            MYSQL_ROW row;    
+            result = mysql_store_result(conn);
+            if (result == NULL) 
+            {
+                printf("获取查询结果失败: %s\n", mysql_error(conn));
+                exit(-1);
+            }
+            // 遍历结果集
+            while ((row = mysql_fetch_row(result)) != NULL) 
+            {
+                // 以字符串形式打印每个字段的值
+                for (int idx = 0; idx < mysql_num_fields(result); idx++) 
+                {
+                    balanceBinarySearchTreeInsert(client, row[idx]);
+                    printf("%s ", row[idx]);
+                }
+                
+            }
+                    
+        }
+        mysql_free_result(result);
+
     }
-    printf("---buffer2:%s\n", buffer);
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
+    }
+    
+    
 
     chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     memset(friendMessage, 0, sizeof(friendMessage));
-    printf("---buffer6:%s\n", buffer);
     
     
-
-    /*将好友放入树中*/
-    MYSQL_RES *res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES));
-    printf("------buffer7------\n");
-
-    memset(res, 0, sizeof(res));
-    printf("------buffer8------\n");
-
-    // 获取结果集
-    //mysql_free_result(res);
-    printf("------buffer5------\n");
-    res = mysql_use_result(conn);
-    printf("------buffer4------\n");
-    while (res != NULL) 
-    {
-    
-
-        MYSQL_ROW row;
-        memset(row, 0, sizeof(row));
-        friendNode *node = (friendNode *)malloc(sizeof(friendNode));
-        while ((row = mysql_fetch_row(res)) != NULL) 
-        {
-    
-
-            // 遍历结果集并输出数据
-            
-            snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
-            snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
-
-                // 处理完一行数据后的其他操作
-            
-            memset(node, 0, sizeof(node));
-            node = (friendNode *)friendMessage;
-            balanceBinarySearchTreeInsert(client, node);
-        }
-        // 释放结果集内存
-    printf("------buffer3------\n");
-
-        mysql_free_result(res);  // 释放查询结果集
-        printf("------buffer4------\n");
-
         
-    }
+
+    
+
     return 0;
     
 }
