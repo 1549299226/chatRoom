@@ -69,7 +69,7 @@ int hashTableCompare(void *arg1, void *arg2)
 }
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -118,11 +118,11 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
         return -1;
     }
     // 将用户列表初始化
-    balanceBinarySearchTreeInit(&Info, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(Info, compareFunc, printFunc);
 
-    balanceBinarySearchTreeInit(&client, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(client, compareFunc, printFunc);
 
-    balanceBinarySearchTreeInit(&online, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(online, compareFunc, printFunc);
     // 初始化一个好友结点
     node = (friendNode *)malloc(sizeof(friendNode));
     if (node == NULL)
@@ -209,7 +209,6 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
 
     len = strlen(accountNumber);
     printf("accountNumber:%s\n", accountNumber);
-    printf("---%d---\n", len);
     while (count < len)                          
     {
               /*保存账号长度*/
@@ -221,7 +220,7 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
         }
         count++;
     }  
-    printf("----count:%d----\n", count); 
+
     if (count != ACCOUNTNUMBER || flag != 0)   /*判断账号长度是满足条件*/
     {  
         if (count != ACCOUNTNUMBER)
@@ -252,8 +251,6 @@ static int accountRegistration(char * accountNumber , MYSQL * conn)
 
     /*将账号信息放进占位符中，放到缓存器buffer*/
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", accountNumber);
-    
-    printf("---%s\n", buffer);
     int ret = mysql_query(conn, buffer);
     
     /*判断该账号是否在数据库中*/
@@ -374,8 +371,7 @@ int chatRoomInsert(chatRoomMessage *Message, MYSQL * conn) /*账号不能跟数�
 {
     
     int ret = 0;
-    // chatRoomObjAnalyze(buffer, Message);
-    printf("---conn:%p\n", conn);
+
     ret = accountRegistration(Message->accountNumber, conn);  /*判断账号是否合法*/
     if (ret == -1)      
     {
@@ -384,15 +380,12 @@ int chatRoomInsert(chatRoomMessage *Message, MYSQL * conn) /*账号不能跟数�
 
 
 
-    printf("请输入密码：(六到八位，包括大小写，特殊字符，及数字)\n");
     ret = registrationPassword(Message->password);
     if (ret == -1)
     {
         return -1; 
     }
 
-    printf("请输入你的邮箱\n");
-    printf("请输入昵称\n");
     ret = nameLegitimacy(Message->name, conn);
     if (ret == -1)
     {
@@ -424,18 +417,55 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s'", Message->accountNumber);
-    if (mysql_query(conn, buffer))
+    // if (mysql_query(conn, buffer))
+    // {
+    //     printf("没有该用户\n");
+    //     exit(-1);
+    // }
+    int ret = mysql_query(conn, buffer);
+    
+    /*判断该账号是否在数据库中*/
+    if (ret == 0)       /*是否有该账号*/
     {
-        printf("没有该用户\n");
-        exit(-1);
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("没有该账号\n");
+            return -1;
+        } 
+        mysql_free_result(result);
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
     }
 
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "SELECT accountNumber FROM chatRoom WHERE accountNumber = '%s' and password = '%s'", Message->accountNumber, Message->password);
-    if (mysql_query(conn, buffer))
+    ret = mysql_query(conn, buffer);
+    if (ret == 0)       /*是否有该账号*/
     {
-        printf("账号密码不匹配\n");
-        exit(-1);
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("账号密码不匹配\n");
+            return -1;
+        } 
+        else 
+        {
+            printf("账号密码正确登陆成功\n");
+            return 0;
+        }
+        mysql_free_result(result);
+
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
     }
 
     return 0;
@@ -444,85 +474,112 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
 }
 
 /*登录*/  /*正确返回0， 错误返回-1*/
-int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MYSQL * conn) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn, HashTable * onlineTable) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 {
     int ret = 0;
-    struct json_object * accountNumVal = json_object_object_get(obj, "accountNum");
-    if (accountNumVal == NULL)
-    {
-        printf("get accountNumVal error\n");
-        exit(-1);
-    }
-
-    struct json_object * passwordVal = json_object_object_get(obj, "password");
-    if (passwordVal == NULL)
-    {
-        perror("get passwordVal error\n");
-        exit(-1);
-    }
-    
-    Message->accountNumber = (char *)json_object_get_string(accountNumVal);
-    Message->password = (char *)json_object_get_string(passwordVal);
 
     ret = determineIfItExists(Message, conn);
     if (ret == -1)
     {
         return -1;
     }
-    friendNode *node = (friendNode *)malloc(sizeof(friendNode));
-    memset(node, 0, sizeof(node));
-    node->data = Message;
 
-    balanceBinarySearchTreeInsert(client, node);
+    if (!chatRoomOnlineTable(Message, fd, onlineTable))    /*登录成功后将其放入在线列表中*/
+    {
+        printf("插入在线列表失败\n");
+        exit(-1);
+    }
 
+    printf("---name:%s\n", Message->accountNumber);
+    
+    mysql_free_result(mysql_store_result(conn));
 
-    char buffer[BUFFER_SIZE];
+    MYSQL_RES *mysql_store_result(MYSQL *conn);
+    /*先判断是否有这个表没有则创建有则跳过*/
+    char buffer[BUFFER_SIZE << 2];
     memset(buffer, 0, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM %sFriend", Message->name);
-            if (mysql_query(conn, buffer))
+    snprintf(buffer, sizeof(buffer),
+             "CREATE TABLE IF NOT EXISTS Friend%s ("
+             "accountNumber VARCHAR(50) PRIMARY KEY,"
+             "name VARCHAR(50) NOT NULL UNIQUE,"
+             "FOREIGN KEY (accountNumber) REFERENCES chatRoom(accountNumber)"
+             " ON DELETE CASCADE"
+             " ON UPDATE CASCADE)", Message->accountNumber);
+
+    if (mysql_query(conn, buffer))
+    {
+        printf("系统错误，创建失败: %s\n", mysql_error(conn));
+        exit(-1);
+    } 
+    /*查询登录人的所有好友，用以之后将其好友放入一个他专属的树中*/
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "SELECT * FROM Friend%s", Message->accountNumber);
+    
+    ret = mysql_query(conn, buffer);
+    if (ret == 0)
+    {
+        MYSQL_RES* result = mysql_store_result(conn);
+        int num_rows = mysql_num_rows(result);
+        if (num_rows == 0) 
+        {
+            printf("你没有朋友，是个孤独的人！！\n");
+            return -1;
+        } 
+        else 
+        {
+            // 获取查询结果集
+            MYSQL_ROW row;    
+            result = mysql_store_result(conn);
+            if (result == NULL) 
             {
-                printf("查无此人\n");
+                printf("获取查询结果失败: %s\n", mysql_error(conn));
                 exit(-1);
             }
+            // 遍历结果集
+            while ((row = mysql_fetch_row(result)) != NULL) 
+            {
+                // 以字符串形式打印每个字段的值
+                for (int idx = 0; idx < mysql_num_fields(result); idx++) 
+                {
+                    balanceBinarySearchTreeInsert(client, row[idx]);
+                    printf("%s ", row[idx]);
+                }
+                
+            }
+                    
+        }
+        mysql_free_result(result);
+
+    }
+    else 
+    {
+        printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
+        return -1;
+    }
     
+    
+
     chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     memset(friendMessage, 0, sizeof(friendMessage));
     
     
-
-
-    MYSQL_RES *res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES));
-    memset(res, 0, sizeof(res));
-    // 获取结果集
-    mysql_free_result(res);
-    res = mysql_use_result(conn);
-    if (res != NULL) 
-    {
-        MYSQL_ROW row;
-        memset(row, 0, sizeof(row));
-        friendNode *node = (friendNode *)malloc(sizeof(friendNode));
-        while ((row = mysql_fetch_row(res)) != NULL) 
-        {
-            // 遍历结果集并输出数据
-            
-            snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
-            snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
-
-                // 处理完一行数据后的其他操作
-            
-            memset(node, 0, sizeof(node));
-            node = (friendNode *)friendMessage;
-            balanceBinarySearchTreeInsert(client, node);
-        }
-        // 释放结果集内存
-        mysql_free_result(res);  // 释放查询结果集
         
-    }
+
+    
+
     return 0;
     
 }
 
-
+/* 在线列表的插入 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
+{
+    if (!hashTableInsert(onlineTable, *(int *)Message->name, sockfd))
+    {
+        return -1;
+    }
+    return 0;
+}
 
 
 /*添加好友*/
@@ -537,13 +594,6 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
-
-    snprintf(buffer, sizeof(buffer), "CREATE TABLE IF NOT EXIST %sFriend (accountNumber char[10] PRIMARY KEY, name text NOT NULL)", friendMessage->name);
-    if (mysql_query(conn, buffer))
-    {
-        printf("系统错误，添加好友失败\n");
-        exit(-1);
-    } 
 
     while (1)
     {
@@ -587,7 +637,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 if (flag == 1)
                 {
                     //创建好友表   有问题   好友表没有标记出来
-                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, friendMessage->accountNumber, friendMessage->name);
+                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
                         printf("系统错误，添加好友失败\n");
@@ -618,7 +668,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
             char buffer[BUFFER_SIZE];
             memset(buffer, 0, sizeof(buffer));
 
-            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE name = '%s'", Message->name);
+            snprintf(buffer, sizeof(buffer), "SELECT accountNumber name FROM chatRoom WHERE name = '%s'", friendMessage->name);
             if (mysql_query(conn, buffer))
             {
                 printf("查无此人\n");
@@ -646,7 +696,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 if (flag == 1)
                 {
                     //创建好友表   有问题   好友表没有标记出来
-                    snprintf(buffer, sizeof(buffer), "INSERT INTO %sFriend(accountNumber name) VALUES ('%s', '%s')", Message->name, friendMessage->accountNumber, friendMessage->name);
+                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
                         printf("系统错误，添加好友失败\n");
@@ -1048,3 +1098,20 @@ int chatRoomOnlineInformation(int sockfd, char *buffer, chatRoomMessage * Messag
 //     balanceBinarySearchTreeIsContainAppointVal(online, )
 // }
 
+/*将客户端的信息传入json*/ 
+int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * obj) 
+{
+    printf("请输入账号\n");
+    scanf("%s", Message->accountNumber);
+    printf("请输入密码\n");
+    scanf("%s", Message->password);
+    // printf("请输入昵称\n");
+    // scanf("%s", Message->name);
+    // printf("请输入邮箱\n");
+    // scanf("%s", Message->mail);
+
+    chatRoomObjConvert(buffer, Message, obj);
+    /*将输入的字符转成json型的字符串*/
+
+    return 0;
+}
