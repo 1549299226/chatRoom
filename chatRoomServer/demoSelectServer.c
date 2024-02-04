@@ -241,7 +241,7 @@ int main()
                 }
             }
             
-            /*询问好友是否在线 在线返回好友fd */
+            /*询问好友是否在线 在线返回好友套接字fd */
             ret = serchFriendIfOnline(online, recvBuffer);
             if (ret > 0)   /*此时好友在线*/
             {
