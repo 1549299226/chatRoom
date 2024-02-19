@@ -193,6 +193,7 @@ int main()
                 perror("accpet error");
                 break;
             }
+
             while (1)
             {
                                 /*注册*/
@@ -201,9 +202,9 @@ int main()
                 {
                     // pthread_mutex_lock(&message_mutex);
                     // pthread_cond_wait(&message_cond);
-                    strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);  
-                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
                     memset(sendBuffer, 0, sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                     
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
@@ -236,7 +237,6 @@ int main()
                     memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
                     
                     recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                    printf("---recvBuffer:%s\n", recvBuffer);
                     chatRoomObjAnalyze(recvBuffer, Message, obj);
                     if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable))
                     {
@@ -250,12 +250,83 @@ int main()
                     {
                         strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        break;
                     }
                 }
             }
+
+            /*主界面*/
+            while (1)
+            {
+                //查看选项
+                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                {
+                    //添加好友
+                }
+                else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                {
+                        //查看好友    
+                    /*询问好友是否在线 在线返回好友套接字fd */
+                    ret = serchFriendIfOnline(online, recvBuffer);
+                    if (ret > 0)   /*此时好友在线*/
+                    {
+                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                        strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
+                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                        
+                    }
+                    if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
+                    {
+                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                        strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
+                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                    }
+                    if (ret = -1)
+                    {
+                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                        strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
+                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                    }
+                }
+                else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
+                {
+                    //发起群聊
+                }
+                else if (!strncmp(recvBuffer, "4", sizeof(recvBuffer)))
+                {
+                    //删除好友
+                }
+                else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
+                {
+                    //退出登录
+                }
+                else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
+                {
+                    //注销登录
+                }
+                else
+                {
+                    printf("输入有误，请重新选择\n");
+                    continue;
+
+                    
+
+                }
+                
+                
+
+                
+            }
             
             
-        
+            
+            
+            
+
             /* 将通信的句柄 放到读集合 */
             FD_SET(acceptfd, &readSet);
 
