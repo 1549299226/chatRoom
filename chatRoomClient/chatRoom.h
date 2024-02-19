@@ -42,7 +42,13 @@ enum STATUS_CODE
     INVALID_ACCESS,
 };
 
-
+typedef struct chatContent
+{
+    char * friendName;  //好友姓名
+    char * myName;      //本人姓名
+    void * content;     //聊天内容
+    time_t time;        //聊天时间
+}  chatContent;
 
 
 /*初始化聊天室*/
