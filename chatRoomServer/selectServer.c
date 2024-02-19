@@ -310,13 +310,8 @@ int main()
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
                         }
                     }
-                }
-                    
+                }   
                 else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
-                {
-                    //发起群聊
-                }
-                else if (!strncmp(recvBuffer, "4", sizeof(recvBuffer)))
                 {
                     //删除好友
                 }

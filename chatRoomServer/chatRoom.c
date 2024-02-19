@@ -30,6 +30,7 @@
 #define BUFFER_SIZE 100
 #define MAX_ONLINE 50
 
+#define SLOTNUMS_MAX 200
 enum FILE_STATUS
 {
     PATH_ERR = -1,
@@ -41,6 +42,14 @@ enum CHOIVE
     ONE = 1,
     Two
 };
+
+int compareFunc(void *val1, void *val2)
+{
+    hashNode *key1 = (hashNode *)val1;
+    hashNode *key2 = (hashNode *)val2;
+
+    return key1->real_key - key2->real_key;
+}
 
 static int fileEixt(const char * filePath);
 
@@ -780,10 +789,11 @@ int serchFriendIfOnline(Friend * online, char * name)
         return 0;
     }
     int * mapVal = NULL;
-    HashTable *pHashtable = HashTable * malloc(sizeof(HashTable));
+    HashTable *pHashtable = (HashTable *) malloc(sizeof(HashTable));
     memset((HashTable *)pHashtable, 0, sizeof(HashTable));
-    pHashtable->slotKeyId = 
-    if (! hashTableGetAppointKeyValue(online, *(int *)name, mapVal))   /*找到在线好友的句柄*/ 
+    pHashtable->slotNums = SLOTNUMS_MAX;
+    pHashtable->compareFunc = compareFunc;
+    if (! hashTableGetAppointKeyValue(pHashtable, (int)*name, mapVal))   /*找到在线好友的句柄*/ 
     {
         sockfd_onlineFriend = *mapVal;
         return sockfd_onlineFriend;

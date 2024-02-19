@@ -51,6 +51,7 @@ enum STATUS_CODE
     INVALID_ACCESS,
 };
 
+int compareFunc(void *val1, void *val2);
 
 
     
