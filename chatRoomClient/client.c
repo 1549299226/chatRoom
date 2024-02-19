@@ -159,7 +159,8 @@ int main()
                 {
                     printf("注册成功\n");
                     loginInterface();
-                    flag = 0;
+                    memset(flag, 0, sizeof(flag));
+
                     continue;
                 }
             }
@@ -192,7 +193,8 @@ int main()
                     printf("登录成功\n");
                     sleep(2);
                     enterInterface();
-                    flag = 0;
+                    memset(flag, 0, sizeof(flag));
+
                     break;
                 }
             }
@@ -219,7 +221,8 @@ int main()
             /*聊天功能*/
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
-                flag = 0;
+                memset(flag, 0, sizeof(flag));
+
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 printf("%s\n", recvBuffer);
                 //查看好友 
@@ -231,11 +234,15 @@ int main()
                 send(sockfd, flag, sizeof(flag), 0);
                 if (!strncmp(flag, "1", sizeof(flag)))
                 {
+                    memset(flag, 0, sizeof(flag));
+
                     /*群聊 to do..*/
                 }
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
+                    memset(flag, 0, sizeof(flag));
+
                     /*先清零*/
                         
                     printf("以下是所有好友的信息:\n");
