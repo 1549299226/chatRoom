@@ -23,6 +23,8 @@
 #define DBPASS "1"
 #define DBNAME "chatRoom"
 
+#define CONTENT_MAX 128
+
 #define BUFFER_SIZE 100
 #define SEND_BUFFER 140
 // struct 
@@ -42,6 +44,19 @@ enum CHOIVE
     ONE = 1,
     Two
 };
+
+int existenceOrNot(void *arg1, void *arg2)
+{
+    chatContent *idx1 = (chatContent *) arg1;
+    chatContent *idx2 = (chatContent *) arg2;
+    // char * idx1 = (char *)arg1;
+    // char * idx2 = (char *)arg2;
+    int result = 0;
+    result = strcmp(idx1->friendName, idx2->friendName);
+
+    return result;
+}
+
 static int fileEixt(const char * filePath);
 
 static int accountRegistration(char * accountNumber , MYSQL * conn);    //判断账号是否合法
@@ -54,7 +69,7 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn); //判断
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend *Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -92,6 +107,36 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend *Info, Fri
         return MALLOC_ERROR;
     }
     bzero((*Message)->password, PASSWORD_MAX);
+
+    (*friendMessage) = (chatContent *)malloc(sizeof(chatContent));
+    memset((*friendMessage), 0, sizeof(friendMessage));
+    /*初始化好友姓名*/
+    (*friendMessage)->friendName = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*friendMessage)->friendName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    /*清楚脏数据*/
+    bzero((*friendMessage)->friendName, sizeof(char) * NAMESIZE);
+
+    /*初始化自己姓名*/
+    (*friendMessage)->myName = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*friendMessage)->myName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*friendMessage)->myName, sizeof(char) * NAMESIZE);
+
+    /*聊天内容初始化*/
+    (*friendMessage)->content = (char *)malloc(sizeof(char) * CONTENT_MAX);
+    if ((*friendMessage)->content == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*friendMessage)->content, sizeof(char) * CONTENT_MAX);
+
+    /*聊天时间初始化*/
+    time((*friendMessage)->chatTime);
 
     // 创建一个json对象
     *obj = (json_object*)malloc(sizeof(json_object*)); 
@@ -658,7 +703,7 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
         printf("您还没有好友，退出");
         return -1;
     }
-    chatRoomMessage * info = data;
+    chatContent * info = data;
     int sockOnlinefd = 0;
 
     char * flag = (char *)malloc(sizeof(char));
@@ -667,8 +712,8 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
     while (1)
     {
         printf("请输入你要查找的好友名字:\n");
-        scanf("%s", info->name);
-        info = (chatRoomMessage *) baseAppointValGetaddressBookNode(Info, data);
+        scanf("%s", info->friendName);
+        info = (chatContent *) baseAppointValGetaddressBookNode(Info, data);
         while(info == NULL)
         {
             printf("查无此人\n");
@@ -689,10 +734,7 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
             }
         }
 
-        printf("找到好友信息:\n");
-        name = info->name;
-        Info->printFunc(info);
-        break;
+        
         
     //     if (chatRoomOnlineOrNot != -1)  /* to do...等接口*/
     //     {
@@ -700,6 +742,11 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name)
     //         return sockOnlinefd;
     //     }
     }
+
+    printf("找到好友信息:\n");
+    name = info->friendName;
+    Info->printFunc(info);
+        
     free (flag);
     flag = NULL;
     return 1;
@@ -1111,7 +1158,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
         return -1;
     }
 
-    if (json_object_object_add(obj, "time", json_object_new_string(chat->time)) != 0) 
+    if (json_object_object_add(obj, "time", json_object_new_int64(*chat->chatTime)) != 0) 
     {
         fprintf(stderr, "json_object_object_add failed for time\n");
         return -1;
@@ -1166,9 +1213,8 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     struct json_object * timeObj = json_object_object_get(obj, "mail");
     if (timeObj != NULL) 
     {
-        const char * time = json_object_get_string(timeObj);
-        strncpy(chat->time, time, sizeof(chat->time) - 1);
-        chat->time[sizeof(chat->time) - 1] = '\0';
+        * chat->chatTime = json_object_get_int64(timeObj);
+        chat->chatTime[sizeof(chat->chatTime) - 1] = '\0';
     }
 
     // 释放 json 对象的内存
