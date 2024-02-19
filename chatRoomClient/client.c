@@ -17,7 +17,7 @@
 
 #define BUFFER_SIZE 128
 #define SERVER_PORT 9999
-#define SERVER_IP "172.18.101.255"
+#define SERVER_IP "127.0.0.1"
 
 void * pthread_Fun(int *arg)
 { 
@@ -60,17 +60,7 @@ int printStruct(void *arg)
     return ret;
 }
 
-int existenceOrNot(void *arg1, void *arg2)
-{
-    chatRoomMessage *idx1 = (chatRoomMessage *) arg1;
-    chatRoomMessage *idx2 = (chatRoomMessage *) arg2;
-    // char * idx1 = (char *)arg1;
-    // char * idx2 = (char *)arg2;
-    int result = 0;
-    result = strcmp(idx1->name, idx2->name);
 
-    return result;
-}
 
 int main()
 {
@@ -91,8 +81,8 @@ int main()
     friendNode *node = NULL;
     Friend *client = NULL;
     Friend * online = NULL;
-
-    chatRoomInit(&Message, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
+    chatContent * friendMessage = NULL;
+    chatRoomInit(&Message, &friendMessage, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
 
      
     
@@ -219,6 +209,8 @@ int main()
         {
             mainInterface();
             scanf("%s", flag);
+            send(sockfd, flag, sizeof(flag), 0);
+
             if (!strncmp(flag, "1", sizeof(flag)))
             {
                 //添加好友
@@ -227,25 +219,27 @@ int main()
             /*聊天功能*/
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
+                flag = 0;
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer);
                 //查看好友 
                 memset(recvBuffer, 0, sizeof(recvBuffer));
                 //send(sockfd, flag, sizeof(flag), 0);
 
-                printf("请选择1、群聊 2、私聊 \n");
+                
                 scanf("%s", flag);
+                send(sockfd, flag, sizeof(flag), 0);
                 if (!strncmp(flag, "1", sizeof(flag)))
                 {
                     /*群聊 to do..*/
                 }
-
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
-                    /*好友的名字*/
-                    char * name = NULL;
-                    memset(Message, 0, sizeof(Message));    /*先清零*/
+                    /*先清零*/
+                        
                     printf("以下是所有好友的信息:\n");
-                    balanceBinarySearchTreeInOrderTravel(client);
+                    balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
                     while (1)
                     {
                         printf("1、输入私聊对象的名字进行聊天\n");
@@ -254,12 +248,14 @@ int main()
 
                         if (!strncmp(flag, "1", sizeof(flag)))
                         {
+                            printf("请输入要聊天的好友姓名\n");
+                            scanf("%s", friendMessage->friendName);
                             /*先清零缓冲区*/
                             memset(sendBuffer, 0, sizeof(sendBuffer));
-                            if (friendIsExit(client, Message, name) == 1) /*好友存在时*/
+                            if (friendIsExit(client, friendMessage, friendMessage->friendName) == 1) /*好友存在时*/
                             {
                                 /*发送好友的名字到服务端*/
-                                strncpy(sendBuffer, name, sizeof(name));
+                                strncpy(sendBuffer, friendMessage->friendName, sizeof(sendBuffer));
                                 ret = send(sockfd, sendBuffer, sizeof(flag), 0);
                                 if (ret < 0)      /*发送失败*/
                                 {
@@ -296,11 +292,11 @@ int main()
                                         /*发送消息  to do ..*/
                                         chatRoomPrivateChat(chatMsg, sockfd);
                                     }
-                                    if (!strncmp(recvBuffer, "你没有好友 或者好友用户名不正确", sizeof(recvBuffer)))
-                                    {
-                                        printf("你没有好友 或者好友用户名不正确, 返回上一级\n");
-                                        continue;
-                                    }
+                                    // if (!strncmp(recvBuffer, "你没有好友 或者好友用户名不正确", sizeof(recvBuffer)))
+                                    // {
+                                    //     printf("你没有好友 或者好友用户名不正确, 返回上一级\n");
+                                    //     continue;
+                                    // }
                                     if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
                                     {
                                         printf("此时好友不在线, 返回上一级\n");
