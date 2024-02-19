@@ -325,10 +325,6 @@ int main()
             }
             else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
             {
-                //发起群聊
-            }
-            else if (!strncmp(recvBuffer, "4", sizeof(recvBuffer)))
-            {
                 //删除好友
             }
             else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
