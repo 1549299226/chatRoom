@@ -6,6 +6,7 @@
 #include <mysql/mysql.h>
 #include <string.h>
 #include <json-c/json_object.h>
+#include <time.h>
 
 typedef BalanceBinarySearchTree Friend;     //好友列表
 typedef AVLTreeNode friendNode;             //每个好友
@@ -20,7 +21,14 @@ typedef struct chatRoomMessage
    
 } chatRoomMessage;
 
-
+//用于聊天的结构体
+typedef struct chatContent
+{
+    char * friendName;  //好友姓名
+    char * myName;      //本人姓名
+    char * content;     //聊天内容
+    time_t * chatTime;        //聊天时间
+}  chatContent;
 // enum SELECT
 // {
 //     BUILT = 1,
@@ -43,10 +51,11 @@ enum STATUS_CODE
 };
 
 
+int existenceOrNot(void *arg1, void *arg2);
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage ** Message, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, chatContent **friendMessage, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(char *buffer, chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/

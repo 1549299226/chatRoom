@@ -17,6 +17,9 @@
 #define ACCOUNTNUMBER 6
 #define FILE_PATH 50
 
+
+#define CONTENT_MAX 128
+
 /*数据库的宏*/
 #define DBHOST "127.0.0.1"
 #define DBUSER "root"
@@ -69,7 +72,7 @@ int hashTableCompare(void *arg1, void *arg2)
 }
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -107,6 +110,38 @@ int chatRoomInit(chatRoomMessage **Message, json_object **obj, Friend **Info, Fr
         return MALLOC_ERROR;
     }
     bzero((*Message)->password, PASSWORD_MAX);
+
+
+    (*friendMessage) = (chatContent *)malloc(sizeof(chatContent));
+    memset((*friendMessage), 0, sizeof(friendMessage));
+    /*初始化好友姓名*/
+    (*friendMessage)->friendName = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*friendMessage)->friendName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    /*清楚脏数据*/
+    bzero((*friendMessage)->friendName, sizeof(char) * NAMESIZE);
+
+    /*初始化自己姓名*/
+    (*friendMessage)->myName = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*friendMessage)->myName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*friendMessage)->myName, sizeof(char) * NAMESIZE);
+
+    /*聊天内容初始化*/
+    (*friendMessage)->content = (char *)malloc(sizeof(char) * CONTENT_MAX);
+    if ((*friendMessage)->content == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*friendMessage)->content, sizeof(char) * CONTENT_MAX);
+
+    /*聊天时间初始化*/
+    time((*friendMessage)->chatTime);
+
 
     // 创建一个json对象
     // 创建一个json对象
@@ -731,12 +766,12 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
 
 /*输入好友名字 判断好友是否在线*/
-int serchFriendIfOnline(HashTable * online, char * name)
+int serchFriendIfOnline(Friend * online, char * name)
 {
     int sockfd_onlineFriend = 0;
     if (online == NULL)
     {
-        printf("无在线好友\n");
+        printf("无好友\n");
         return 0;
     }
     if (name == NULL)
@@ -745,9 +780,12 @@ int serchFriendIfOnline(HashTable * online, char * name)
         return 0;
     }
     int * mapVal = NULL;
-    if (! hashTableGetAppointKeyValue(online, name, mapVal))   /*找到在线好友的句柄*/ 
+    HashTable *pHashtable = HashTable * malloc(sizeof(HashTable));
+    memset((HashTable *)pHashtable, 0, sizeof(HashTable));
+    pHashtable->slotKeyId = 
+    if (! hashTableGetAppointKeyValue(online, *(int *)name, mapVal))   /*找到在线好友的句柄*/ 
     {
-        sockfd_onlineFriend = (int)mapVal;
+        sockfd_onlineFriend = *mapVal;
         return sockfd_onlineFriend;
     } 
     return -1;
@@ -1095,7 +1133,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
         return -1;
     }
 
-    if (json_object_object_add(obj, "time", json_object_new_string(chat->time)) != 0) 
+    if (json_object_object_add(obj, "time", json_object_new_int64(*chat->chatTime)) != 0) 
     {
         fprintf(stderr, "json_object_object_add failed for time\n");
         return -1;
@@ -1150,9 +1188,8 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     struct json_object * timeObj = json_object_object_get(obj, "mail");
     if (timeObj != NULL) 
     {
-        const char * time = json_object_get_string(timeObj);
-        strncpy(chat->time, time, sizeof(chat->time) - 1);
-        chat->time[sizeof(chat->time) - 1] = '\0';
+        *chat->chatTime = json_object_get_int64(timeObj);
+        chat->chatTime[sizeof(chat->chatTime) - 1] = '\0';
     }
 
     // 释放 json 对象的内存

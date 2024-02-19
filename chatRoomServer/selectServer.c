@@ -113,8 +113,9 @@ int main()
     Friend *client = NULL;
     Friend * online = NULL;
     HashTable *onlineTable = NULL;
-
-    chatRoomInit(&Message, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
+    chatContent * friendMessage = NULL;
+    
+    chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;
@@ -203,9 +204,9 @@ int main()
                     // pthread_mutex_lock(&message_mutex);
                     // pthread_cond_wait(&message_cond);
                     strncpy(sendBuffer, "请注册", sizeof(sendBuffer) - 1);
-                    memset(sendBuffer, 0, sizeof(sendBuffer));
                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                    
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                     printf("%s\n",recvBuffer);
@@ -266,32 +267,51 @@ int main()
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                 {
-                        //查看好友    
-                    /*询问好友是否在线 在线返回好友套接字fd */
-                    ret = serchFriendIfOnline(online, recvBuffer);
-                    if (ret > 0)   /*此时好友在线*/
+                    strncpy(sendBuffer, "请选择1、群聊 2、私聊 ", sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                    //选择聊天方式    
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    
+                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                     {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
-                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                        
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                        /*群聊 to do..*/
                     }
-                    if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
+                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                     {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
-                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                    }
-                    if (ret = -1)
-                    {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
-                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                        /*询问好友是否在线 在线返回好友套接字fd */
+                        ret = serchFriendIfOnline(online, recvBuffer);
+                        if (ret > 0)   /*此时好友在线*/
+                        {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                            strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
+                            send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                            
+                        }
+                        if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
+                        {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                            strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
+                            send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                        }
+                        if (ret = -1)
+                        {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                            strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
+                            send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                        }
                     }
                 }
+                    
                 else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
                 {
                     //发起群聊
