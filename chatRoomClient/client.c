@@ -512,6 +512,15 @@ int main()
             else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
             {
                 //退出登录
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+                strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
+                send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+                logoutCleanup(Message, friendMessage, obj, conn, node);
+                free(flag);
+                break;
+
+
             }
             else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
             {

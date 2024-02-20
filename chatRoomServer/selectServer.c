@@ -531,7 +531,7 @@ int main()
                             continue;
                         }
                         
-                        char * friendName = resolveFriendName(recvBuffer, friendMessage);
+                        char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
 
                         /*判断好友是否在线 在线返回好友套接字fd */
                         ret = searchFriendIfOnline(onlineTable, friendName);
@@ -572,6 +572,13 @@ int main()
                 else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
                 {
                     //退出登录
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    printf("%s\n", recvBuffer);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    int delete_name = convertToInt(Message->name);
+                    hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
+                    break;
                 }
                 else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
                 {
