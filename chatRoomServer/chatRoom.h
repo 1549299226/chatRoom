@@ -68,7 +68,7 @@ int chatRoomLogIn(int fd, chatRoomMessage * Message, Friend *client, MYSQL * con
 int serchFriendIfOnline(Friend * online, char * name);
 
 /*添加好友*/
-int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
+int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable);

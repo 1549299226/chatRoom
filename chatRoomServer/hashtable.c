@@ -168,7 +168,12 @@ int hashTableDelAppointKey(HashTable *pHashtable, HASH_KEYTYPE key)
 int hashTableGetAppointKeyValue(HashTable *pHashtable, int key, int *mapValue)
 {
     int ret = 0;
-
+    if (!key)
+    {
+        printf("该好友不在线\n");
+        return -1;
+    }
+    
     /* 将外部传过来的key 转化为我哈希表对应的slotId */
     int KeyId = 0;
     calHashValue(pHashtable, key, &KeyId);

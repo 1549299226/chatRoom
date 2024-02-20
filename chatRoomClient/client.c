@@ -19,6 +19,10 @@
 #define SERVER_PORT 9999
 #define SERVER_IP "127.0.0.1"
 
+#define ACCOUNTNUMBER 6
+#define NAMESIZE 12
+
+
 void * pthread_Fun(int *arg)
 { 
     int sockfd = * arg;
@@ -161,6 +165,8 @@ int main()
                     loginInterface();
                     memset(flag, 0, sizeof(flag));
 
+                    memset(flag, 0, sizeof(flag));
+
                     continue;
                 }
             }
@@ -189,17 +195,20 @@ int main()
 
 
                 }
+               
                 else
                 {
+                    printf("登录失败\n");
                     memset(Message->accountNumber, 0, sizeof(Message->accountNumber));
                     memset(Message->name, 0, sizeof(Message->name));
                     memset(Message->password, 0, sizeof(Message->password));
                     memset(Message->mail, 0, sizeof(Message->mail));
-                    printf("登陆失败\n");
+                    memset(flag, 0, sizeof(flag));
                     sleep(2);
                     continue;
-
                 }
+
+                
             }
             else
             {
@@ -217,16 +226,152 @@ int main()
             printf("请选择\n");
             scanf("%s", flag);
             send(sockfd, flag, sizeof(flag), 0);
-
+            //添加好友
             if (!strncmp(flag, "1", sizeof(flag)))
-            {
-                //添加好友
+            {      
+                chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                memset(friendMessage, 0, sizeof(friendMessage)); 
+                
+                friendMessage->accountNumber = (char *)malloc(sizeof(ACCOUNTNUMBER));
+                memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
 
+                friendMessage->name = (char *)malloc(sizeof(NAMESIZE));
+                memset(friendMessage->name, 0, sizeof(friendMessage->name));
+
+                memset(flag, 0, sizeof(flag));
+                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                while (1)
+                {   
+                    scanf("%s", flag);
+                    send(sockfd, flag, sizeof(flag), 0);
+                    if (!strncmp(flag, "1", sizeof(flag)))
+                    {
+                        recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                        printf("%s\n", recvBuffer);
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        
+                        scanf("%s", friendMessage->accountNumber);
+                        send(sockfd, friendMessage->accountNumber, sizeof(friendMessage->accountNumber), 0);
+                        memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                        
+                        recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                        printf("查询到的名称:%s\n", recvBuffer);
+                        if (!strncmp(recvBuffer, "添加失败，查询此人失败,请重新查询", sizeof(recvBuffer)))
+                        {
+                            printf("%s\n", recvBuffer);
+                            memset(flag, 0, sizeof(flag));
+                            continue;
+                        }
+                        else
+                        {
+                            printf("是否要添加此人为好友:\n1.是   2.否\n");
+                            scanf("%s", flag);
+                            send(sockfd, flag, sizeof(flag), 0);
+                            if (!strncmp(flag, "1", sizeof(flag)))
+                            {
+                                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+
+                                if (!strncmp(recvBuffer, "添加失败，插入此人失败，请重新查询", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n", recvBuffer);
+                                    memset(flag, 0, sizeof(flag));
+                                    continue;
+                                }
+                                else if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n", recvBuffer);
+                                    continue;
+                                }
+                            }
+                            else if (!strncmp(flag, "2", sizeof(flag)))
+                            {
+                                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                                printf("%s\n", recvBuffer);
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                continue;
+ 
+                            }
+                            else
+                            {
+                                printf("输入内容不符\n");
+                                continue;
+                            }
+                        }
+                    }
+                    else if (!strncmp(flag, "2", sizeof(flag)))     //用昵称查找
+                    {
+                        scanf("%s", friendMessage->name);
+                        send(sockfd, friendMessage->name, sizeof(friendMessage->name), 0);
+                        memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                        if (!strncmp(recvBuffer, "添加失败，查询此人失败,请重新查询", sizeof(recvBuffer)))
+                        {
+                            printf("%s\n", recvBuffer);
+                            memset(flag, 0, sizeof(flag));
+                            continue;
+                        }
+                        else
+                        {
+                            printf("是否要添加此人为好友:\n1.是   2.否\n");
+                            scanf("%s", flag);
+                            send(sockfd, flag, sizeof(flag), 0);
+                            if (!strncmp(flag, "1", sizeof(flag)))
+                            {
+                                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+
+                                if (!strncmp(recvBuffer, "添加失败，插入此人失败，请重新查询", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n", recvBuffer);
+                                    memset(flag, 0, sizeof(flag));
+                                    continue;
+                                }
+                                else if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n", recvBuffer);
+                                    continue;
+                                }
+                            }
+                            else if (!strncmp(flag, "2", sizeof(flag)))
+                            {
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                                printf("%s\n", recvBuffer);
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                continue;
+ 
+                            }
+                            else
+                            {
+                                printf("输入内容不符\n");
+                                continue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        printf("输入有误，请重新输入\n");
+                        continue;
+                    }
+                
+                
+                }
+                
+                
+                
+
+
+                continue;
+
+                
+                
             }
             
             /*聊天功能*/
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
+                memset(flag, 0, sizeof(flag));
+
                 memset(flag, 0, sizeof(flag));
 
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
@@ -251,6 +396,8 @@ int main()
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
+                    memset(flag, 0, sizeof(flag));
+
                     memset(flag, 0, sizeof(flag));
 
                     /*先清零*/
