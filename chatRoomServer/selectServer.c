@@ -76,7 +76,7 @@ int existenceOrNot(void *arg1, void *arg2)
     // char * idx1 = (char *)arg1;
     // char * idx2 = (char *)arg2;
     int result = 0;
-    result = strncmp(idx1->name, idx2->name, NAMESIZE - 1);
+    result = strcmp(idx1->name, idx2->name);
 
     return result;
 }
@@ -329,24 +329,24 @@ int main()
                                     MYSQL_ROW row;
                                     if ((row = mysql_fetch_row(res)) != NULL) 
                                     {
-                                        snprintf(accountNumber, ACCOUNTNUMBER, "%s", row[0]);
-                                        snprintf(friendMessage->name, strlen(friendMessage->name), "%s", row[1]);
+                                        snprintf(accountNumber, ACCOUNTNUMBER + 1, "%s", row[0]);
+                                        snprintf(name, NAMESIZE + 1, "%s", row[1]);
 
                                             // 处理完一行数据后的其他操作
                                     }
                                     mysql_free_result(res);  // 释放查询结果集
                                 }
-                                printf("账号---%s\n", friendMessage->accountNumber);
+                                printf("账号---%s\n", accountNumber);
                                 
                                 
                              
-                                send(acceptfd, friendMessage->name, NAMESIZE, 0);
+                                send(acceptfd, name, NAMESIZE + 1, 0);
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
                                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                                 {
                            
-                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s (accountNumber , name) VALUES ('%s', '%s')", Message->accountNumber, accountNumber, friendMessage->name);
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s (accountNumber , name) VALUES ('%s', '%s')", Message->accountNumber, accountNumber, name);
                                     
                                     if (mysql_query(conn, buffer))
                                     {
@@ -355,8 +355,13 @@ int main()
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                         memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                        memset(name, 0, NAMESIZE + 1);
+                                        memset(accountNumber, 0, ACCOUNTNUMBER + 1);
+
                                         continue;
                                     }
+                                    friendMessage->accountNumber = accountNumber;
+                                    friendMessage->name = name;
                                     //插入到好友列表
                                     balanceBinarySearchTreeInsert(client, friendMessage);
                                     strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
@@ -364,6 +369,8 @@ int main()
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
                                     memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                     memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    memset(name, 0, NAMESIZE + 1);
+                                    memset(accountNumber, 0, ACCOUNTNUMBER + 1);
                                     printf("添加成功");
                                     sleep(1);
                                     break;
@@ -416,15 +423,15 @@ int main()
                                     MYSQL_ROW row;
                                     if ((row = mysql_fetch_row(res)) != NULL) 
                                     {
-                                        snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
-                                        snprintf(name, NAMESIZE, "%s", row[1]);
+                                        snprintf(accountNumber, ACCOUNTNUMBER + 1, "%s", row[0]);
+                                        snprintf(name, NAMESIZE + 1, "%s", row[1]);
 
                                             // 处理完一行数据后的其他操作
                                     }
                                     mysql_free_result(res);  // 释放查询结果集
                                 }
-                                printf("424----%s,%s\n", friendMessage->accountNumber, name);
-                                send(acceptfd, friendMessage->accountNumber, ACCOUNTNUMBER, 0);
+                                printf("424----%s,%s\n", accountNumber, name);
+                                send(acceptfd, accountNumber, ACCOUNTNUMBER + 1, 0);
 
                                                   /*这里少东西还，*/
                                 
@@ -435,9 +442,9 @@ int main()
                                 {
                                     //创建好友表   有问题   好友表没有标记出来
                                     //插入到好友列表
-                                    printf("436----%s,%s\n", friendMessage->accountNumber, name);
+                                    printf("436----%s,%s\n", accountNumber, name);
                                      
-                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber ,name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, name);
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber ,name) VALUES ('%s', '%s')", Message->accountNumber, accountNumber, name);
                                     if (mysql_query(conn, buffer))
                                     {
                                         strncpy(sendBuffer, "添加失败，插入此人失败，请重新查询", sizeof(sendBuffer));    
@@ -445,16 +452,22 @@ int main()
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                         memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                        memset(name, 0, NAMESIZE + 1);
+                                        memset(accountNumber, 0, ACCOUNTNUMBER + 1);
                                         continue;
                                     }
 
                                     //添加好友到树中
+                                    friendMessage->accountNumber = accountNumber;
+                                    friendMessage->name = name;
                                     balanceBinarySearchTreeInsert(client, friendMessage);
                                     strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
                                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
                                     memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                     memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    memset(name, 0, NAMESIZE + 1);
+                                    memset(accountNumber, 0, ACCOUNTNUMBER + 1);
                                     printf("添加成功");
                                     sleep(1);
                                     break;
@@ -496,7 +509,7 @@ int main()
                     if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-
+                        
                         /*群聊 to do..*/
                     }
                     else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
