@@ -76,7 +76,7 @@ int existenceOrNot(void *arg1, void *arg2)
     // char * idx1 = (char *)arg1;
     // char * idx2 = (char *)arg2;
     int result = 0;
-    result = strcmp(idx1->name, idx2->name);
+    result = strncmp(idx1->name, idx2->name, NAMESIZE - 1);
 
     return result;
 }
@@ -280,6 +280,11 @@ int main()
                     friendMessage->name = (char *)malloc(sizeof(NAMESIZE));
                     memset(friendMessage->name, 0, sizeof(friendMessage->name));
 
+                    char * accountNumber = (char *)malloc(ACCOUNTNUMBER);
+                    memset(accountNumber, 0, ACCOUNTNUMBER);
+
+                    char * name = (char *)malloc(NAMESIZE);
+                    memset(name, 0, NAMESIZE);
                     char buffer[BUFFER_SIZE];
                     memset(buffer, 0, sizeof(buffer));
 
@@ -324,35 +329,25 @@ int main()
                                     MYSQL_ROW row;
                                     if ((row = mysql_fetch_row(res)) != NULL) 
                                     {
-                                        //snprintf(Friend.accountNumber, sizeof(Friend.accountNumber), "%s", row[0]);
-                                        snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
+                                        snprintf(accountNumber, ACCOUNTNUMBER, "%s", row[0]);
+                                        snprintf(friendMessage->name, strlen(friendMessage->name), "%s", row[1]);
 
                                             // 处理完一行数据后的其他操作
                                     }
                                     mysql_free_result(res);  // 释放查询结果集
                                 }
-                                printf("%s\n", friendMessage->name);
-                                if (friendMessage->name != NULL)
-                                {
-                                    send(acceptfd, friendMessage->name, NAMESIZE, 0);
-                                }
-                                else
-                                {
-                                    strncpy(sendBuffer, "添加失败，查询此人失败，请重新查询", sizeof(sendBuffer));    
-                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                                    memset(sendBuffer, 0, sizeof(sendBuffer));
-                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
-                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
-                                    continue;
-                                }
+                                printf("账号---%s\n", friendMessage->accountNumber);
                                 
                                 
-                                
+                             
+                                send(acceptfd, friendMessage->name, NAMESIZE, 0);
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
                                 recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
                                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                                 {
-                                    printf("%s\n", Message->accountNumber);
-                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber , name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
+                           
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s (accountNumber , name) VALUES ('%s', '%s')", Message->accountNumber, accountNumber, friendMessage->name);
+                                    
                                     if (mysql_query(conn, buffer))
                                     {
                                         strncpy(sendBuffer, "添加失败，插入此人失败，请重新查询", sizeof(sendBuffer));    
@@ -369,7 +364,9 @@ int main()
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
                                     memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                     memset(friendMessage->name, 0, sizeof(friendMessage->name));
-
+                                    printf("添加成功");
+                                    sleep(1);
+                                    break;
                                 }    
                                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                                 {
@@ -390,8 +387,15 @@ int main()
                         }
                         else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))     //用昵称查找
                         {
+                            printf("请输入昵称\n");
+                            strncpy(sendBuffer, "请输入昵称", sizeof(sendBuffer));    
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
+
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                            printf("name:%s\n", recvBuffer);
+
                             char buffer[BUFFER_SIZE];
                             memset(buffer, 0, sizeof(buffer));
                             friendMessage->name = recvBuffer;
@@ -413,22 +417,27 @@ int main()
                                     if ((row = mysql_fetch_row(res)) != NULL) 
                                     {
                                         snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
-                                        // snprintf(Friend->name, sizeof(Friend->name), "%s", row[1]);
+                                        snprintf(name, NAMESIZE, "%s", row[1]);
 
                                             // 处理完一行数据后的其他操作
                                     }
                                     mysql_free_result(res);  // 释放查询结果集
                                 }
+                                printf("424----%s,%s\n", friendMessage->accountNumber, name);
+                                send(acceptfd, friendMessage->accountNumber, ACCOUNTNUMBER, 0);
 
                                                   /*这里少东西还，*/
-                                printf("是否要添加此人为好友:\n1.是   2.否\n");
+                                
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                                printf("431----%s\n", recvBuffer);
                                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                                 {
                                     //创建好友表   有问题   好友表没有标记出来
                                     //插入到好友列表
-                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
+                                    printf("436----%s,%s\n", friendMessage->accountNumber, name);
+                                     
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber ,name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, name);
                                     if (mysql_query(conn, buffer))
                                     {
                                         strncpy(sendBuffer, "添加失败，插入此人失败，请重新查询", sizeof(sendBuffer));    
@@ -446,7 +455,9 @@ int main()
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
                                     memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                                     memset(friendMessage->name, 0, sizeof(friendMessage->name));
-                                    continue;
+                                    printf("添加成功");
+                                    sleep(1);
+                                    break;
                                 }    
                                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                                 {
