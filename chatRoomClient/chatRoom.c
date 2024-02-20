@@ -1272,3 +1272,43 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     }
     return 0;
 }
+
+/* 释放聊天室和好友消息结构体的内存 */
+static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) ;
+
+/* 释放聊天室和好友消息结构体的内存 */
+static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) 
+{
+    if (Message != NULL) {
+        free(Message->name);
+        free(Message->accountNumber);
+        free(Message->mail);
+        free(Message->password);
+        free(Message);
+    }
+    if (friendMessage != NULL) {
+        free(friendMessage->friendName);
+        free(friendMessage->myName);
+        free(friendMessage->content);
+        free(friendMessage);
+    }
+}
+
+/* 关闭数据库连接并释放资源 */
+static void closeDatabase(MYSQL *conn) ;
+
+static void closeDatabase(MYSQL *conn) 
+{
+    if (conn != NULL) {
+        mysql_close(conn);
+    }
+}
+
+/* 退出登录时的资源回收 */
+void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) 
+{
+    freeMemory(Message, friendMessage);  // 释放内存
+    json_object_put(obj);  // 释放 JSON 对象
+    closeDatabase(conn);   // 关闭数据库连接
+    free(node);            // 释放好友节点的内存
+}

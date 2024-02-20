@@ -569,9 +569,22 @@ int main()
                 {
                     //删除好友
                 }
-                else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
+                else if (!strncmp(recvBuffer, "6", sizeof(recvBuffer)))
                 {
-                    //退出登录
+                  
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+                strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
+                printf("%s\n", sendBuffer);
+
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+               
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+#if 1
+                    int delete_name = convertToInt(Message->name);
+                    hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
+                    printf("客户端退出\n");
+#endif
+                    break;
                 }
                 else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
                 {
