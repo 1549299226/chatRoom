@@ -29,7 +29,7 @@ enum STATUS_CODE
 static void * threadHander(void *arg);
 static void * managerHander(void *arg);
 static int threadExitClrResources(threadpool_t *pool);
-static int is_thread_alive(pthread_t tid);
+static int threadIsAlive(pthread_t tid);
 
 
 /*线程是否存活*/
