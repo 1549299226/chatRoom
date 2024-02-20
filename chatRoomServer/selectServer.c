@@ -578,6 +578,7 @@ int main()
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     int delete_name = convertToInt(Message->name);
                     hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
+                    printf("客户端退出\n");
                     break;
                 }
                 else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
