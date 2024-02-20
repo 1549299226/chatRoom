@@ -180,22 +180,23 @@ int main()
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 if (!strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
                 {
+                    
+                    printf("登录成功\n");
+                    memset(flag, 0, sizeof(flag));
+                    enterInterface();
+                    sleep(2);
+                    break;
+                }
+                else
+                {
+                    printf("登录失败\n");
                     memset(Message->accountNumber, 0, sizeof(Message->accountNumber));
                     memset(Message->name, 0, sizeof(Message->name));
                     memset(Message->password, 0, sizeof(Message->password));
                     memset(Message->mail, 0, sizeof(Message->mail));
-                    printf("登陆失败\n");
+                    memset(flag, 0, sizeof(flag));
                     sleep(2);
                     continue;
-                }
-                else
-                {
-                    printf("登录成功\n");
-                    sleep(2);
-                    enterInterface();
-                    memset(flag, 0, sizeof(flag));
-
-                    break;
                 }
             }
             else
@@ -215,7 +216,25 @@ int main()
 
             if (!strncmp(flag, "1", sizeof(flag)))
             {
+                memset(flag, 0, sizeof(flag));
                 //添加好友
+                recv(sockfd, recvBuffer,sizeof(recvBuffer), 0);
+                if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
+                {
+                    printf("%s\n", recvBuffer);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    sleep(1);
+                    continue;
+                    
+                }
+                else
+                {
+                    printf("添加好友失败\n");
+                    sleep(1);
+                    continue;
+
+                }
+                
             }
             
             /*聊天功能*/
@@ -246,7 +265,7 @@ int main()
                     /*先清零*/
                         
                     printf("以下是所有好友的信息:\n");
-                    balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
+                    //这个应该写在服务器上在服务其中查询好友的列表
                     while (1)
                     {
                         printf("1、输入私聊对象的名字进行聊天\n");

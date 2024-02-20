@@ -3,7 +3,7 @@
 #include <string.h>
 #include "doubleLinkListQueue.h"
 #include <math.h>
-
+#include <stdio.h>
 /* 状态码 */
 enum STATUS_CODE
 {
@@ -656,6 +656,12 @@ static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
 int balanceBinarySearchTreeInOrderTravel(BalanceBinarySearchTree *pBstree)
 {
     int ret = 0;
+    if (pBstree->root == NULL)
+    {
+        printf("没有好友\n");
+        return ret;
+    }
+    
     inOrderTravel(pBstree, pBstree->root);
     return ret;
 }
