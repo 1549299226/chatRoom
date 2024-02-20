@@ -26,10 +26,9 @@ enum STATUS_CODE
 };
 
 /* 静态函数前置声明 */
-static void * threadHander(void *arg);
 static void * managerHander(void *arg);
 static int threadExitClrResources(threadpool_t *pool);
-static int is_thread_alive(pthread_t tid);
+static int threadIsAlive(pthread_t tid);
 
 
 /*线程是否存活*/
@@ -60,7 +59,7 @@ static int threadExitClrResources(threadpool_t *pool)
 }
 
 /* 本质是一个消费者 */
-static void * threadHander(void *arg)
+void * threadHander(void *arg)
 {
     /* 设置线程分离 让系统自动回收资源 */
     pthread_detach(pthread_self());
