@@ -1115,7 +1115,7 @@ const char * resolveFriendName(char * buffer, chatContent * chat)
     if (obj == NULL) 
     {
         fprintf(stderr, "json_tokener_parse failed\n");
-        return -1;
+        return NULL;
     }
     struct json_object * friendNameObj = json_object_object_get(obj, "friendName");
     if (friendNameObj != NULL) 
