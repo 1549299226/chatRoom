@@ -22,6 +22,8 @@
 
 #define BUFFER_SIZE     128
 
+#define ACCOUNTNUMBER 6
+#define NAMESIZE 12
 /* 用单进程/线程 实现并发 */
 
 void Off(int arg)
@@ -266,13 +268,208 @@ int main()
                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                 {
                     //添加好友
-                    if (!chatRoomAppend(Message, obj, conn, client))
-                    {
-                        strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));
-                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                    strncpy(sendBuffer, "请选择 1.用账号查找 2.昵称查找", sizeof(sendBuffer) - 1);
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
 
-                        continue;
+                    chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                    memset(friendMessage, 0, sizeof(friendMessage));
+                    
+                    friendMessage->accountNumber = (char *)malloc(sizeof(ACCOUNTNUMBER));
+                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+
+                    friendMessage->name = (char *)malloc(sizeof(NAMESIZE));
+                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+
+                    char buffer[BUFFER_SIZE];
+                    memset(buffer, 0, sizeof(buffer));
+
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                    while (1)
+                    {
+                        
+
+                        recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                        
+
+                        if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))      //用账号查找  
+                        {
+                            printf("请输入账号\n");
+                            strncpy(sendBuffer, "请输入账号", sizeof(sendBuffer));    
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                            memset(recvBuffer, 0, sizeof(recvBuffer));
+                            
+                            recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                            friendMessage->accountNumber = recvBuffer;
+                            snprintf(buffer, sizeof(buffer), "SELECT accountNumber , name FROM chatRoom WHERE accountNumber = '%s'", friendMessage->accountNumber);
+                            if (mysql_query(conn, buffer))
+                            {
+                                strncpy(sendBuffer, "添加失败，查询此人失败,请重新查询", sizeof(sendBuffer));    
+                                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                continue;
+                            }
+                            else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+                            {
+                                
+                                        /*又可以改进的地方  可以改为查到将用户的信息打印出来，之后再确定要不要加此人为好友，
+                                                                是，则向该用户发送一个信息是否接受该用户的好友申请，
+                                                                选1接受 2不接受应该如此，现在完成的是点击加好友就直接加到了自己的好友表中是不太友好的*/
+                                MYSQL_RES *res = mysql_use_result(conn);
+                                if (res != NULL) 
+                                {
+                                    MYSQL_ROW row;
+                                    if ((row = mysql_fetch_row(res)) != NULL) 
+                                    {
+                                        //snprintf(Friend.accountNumber, sizeof(Friend.accountNumber), "%s", row[0]);
+                                        snprintf(friendMessage->name, sizeof(friendMessage->name), "%s", row[1]);
+
+                                            // 处理完一行数据后的其他操作
+                                    }
+                                    mysql_free_result(res);  // 释放查询结果集
+                                }
+                                printf("%s\n", friendMessage->name);
+                                if (friendMessage->name != NULL)
+                                {
+                                    send(acceptfd, friendMessage->name, NAMESIZE, 0);
+                                }
+                                else
+                                {
+                                    strncpy(sendBuffer, "添加失败，查询此人失败，请重新查询", sizeof(sendBuffer));    
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    continue;
+                                }
+                                
+                                
+                                
+                                recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                                if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n", Message->accountNumber);
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber , name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
+                                    if (mysql_query(conn, buffer))
+                                    {
+                                        strncpy(sendBuffer, "添加失败，插入此人失败，请重新查询", sizeof(sendBuffer));    
+                                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                        memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                        continue;
+                                    }
+                                    //插入到好友列表
+                                    balanceBinarySearchTreeInsert(client, friendMessage);
+                                    strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+
+                                }    
+                                else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                                {
+                                    strncpy(sendBuffer, "返回成功", sizeof(sendBuffer));    
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    continue;
+                                }
+                                else
+                                {
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    continue;
+                                }
+                            }
+                        }
+                        else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))     //用昵称查找
+                        {
+                            memset(recvBuffer, 0, sizeof(recvBuffer));
+                            recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                            char buffer[BUFFER_SIZE];
+                            memset(buffer, 0, sizeof(buffer));
+                            friendMessage->name = recvBuffer;
+                            snprintf(buffer, sizeof(buffer), "SELECT accountNumber , name FROM chatRoom WHERE name = '%s'", friendMessage->name);
+                            if (mysql_query(conn, buffer))
+                            {
+                                strncpy(sendBuffer, "添加失败，查询此人失败,请重新查询", sizeof(sendBuffer));    
+                                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                
+                                continue;
+                            }
+                            else
+                            {
+                                MYSQL_RES *res = mysql_use_result(conn);
+                                if (res != NULL) 
+                                {
+                                    MYSQL_ROW row;
+                                    if ((row = mysql_fetch_row(res)) != NULL) 
+                                    {
+                                        snprintf(friendMessage->accountNumber, sizeof(friendMessage->accountNumber), "%s", row[0]);
+                                        // snprintf(Friend->name, sizeof(Friend->name), "%s", row[1]);
+
+                                            // 处理完一行数据后的其他操作
+                                    }
+                                    mysql_free_result(res);  // 释放查询结果集
+                                }
+
+                                                  /*这里少东西还，*/
+                                printf("是否要添加此人为好友:\n1.是   2.否\n");
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
+                                if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                                {
+                                    //创建好友表   有问题   好友表没有标记出来
+                                    //插入到好友列表
+                                    snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
+                                    if (mysql_query(conn, buffer))
+                                    {
+                                        strncpy(sendBuffer, "添加失败，插入此人失败，请重新查询", sizeof(sendBuffer));    
+                                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                        memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                        continue;
+                                    }
+
+                                    //添加好友到树中
+                                    balanceBinarySearchTreeInsert(client, friendMessage);
+                                    strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    continue;
+                                }    
+                                else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                                {
+                                    strncpy(sendBuffer, "返回成功", sizeof(sendBuffer));    
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+
+                                    continue;
+                                }
+                                else
+                                {
+                                    memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
+                                    memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                                    continue;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            continue;
+                        }
                     }
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
