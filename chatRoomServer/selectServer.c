@@ -94,6 +94,7 @@ int printStruct(void *arg)
 
 void* handleClient(void* arg) 
 {
+    pthread_detach(pthread_self());
     int acceptfd = *((int*)arg);  // 获取acceptfd
 
     chatRoomMessage *Message = NULL;
@@ -527,10 +528,11 @@ void* handleClient(void* arg)
         // ... 原先的代码 ...
     }
     
-    
+
     // 原先的代码结束
 
     close(acceptfd);  // 处理结束后关闭acceptfd
+    pthread_exit(NULL);
     return NULL;
 }
 
