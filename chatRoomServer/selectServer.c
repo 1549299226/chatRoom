@@ -243,15 +243,17 @@ int main()
                     {
 
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-                        strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
+                        strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        continue;
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        
+                        break;
                     }
                     else
                     {
-                        strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
+                        strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        break;
+                        continue;
                     }
                 }
             }
@@ -264,6 +266,14 @@ int main()
                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                 {
                     //添加好友
+                    if (!chatRoomAppend(Message, obj, conn, client))
+                    {
+                        strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                        continue;
+                    }
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                 {
@@ -284,7 +294,7 @@ int main()
                     else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-
+                        balanceBinarySearchTreeInOrderTravel(client); //查询好友信息
                         /*询问好友是否在线 在线返回好友套接字fd */
                         ret = serchFriendIfOnline(online, recvBuffer);
                         if (ret > 0)   /*此时好友在线*/
@@ -302,7 +312,7 @@ int main()
                             send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
                         }
-                        if (ret = -1)
+                        if (ret == -1)
                         {
                             memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
                             strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
