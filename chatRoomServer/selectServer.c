@@ -531,7 +531,7 @@ int main()
                             continue;
                         }
                         
-                        char * friendName = resolveFriendName(recvBuffer, friendMessage);
+                        char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
 
                         /*判断好友是否在线 在线返回好友套接字fd */
                         ret = searchFriendIfOnline(onlineTable, friendName);

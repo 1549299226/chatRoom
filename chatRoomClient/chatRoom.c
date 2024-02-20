@@ -777,7 +777,7 @@ static char *createJSONMessage(chatContent *chat)
     char *result = strdup(jsonStr);
 
     json_object_put(jobj); // 释放 jobj 对象
-    free(jsonStr); // 释放 jsonStr
+    free((void *)jsonStr); // 释放 jsonStr
     free(result);
     return result;
 }
@@ -828,11 +828,11 @@ int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chat
                     /*判断发送的消息是否超过140字符*/
                     truncateString(chat->content);
                     
-                    chat->chatTime = time(NULL);
+                    chat->chatTime = (time_t *)time(NULL);
                     chat->friendName = friendName;
                     chat->myName = message->name;
 
-                    char * json_chat = createJSONMessage(&chat);
+                    char * json_chat = createJSONMessage(chat);
 
                     strncpy(sendBuffer, json_chat, sizeof(sendBuffer));
                     memset(sendBuffer, 0, sizeof(sendBuffer));
