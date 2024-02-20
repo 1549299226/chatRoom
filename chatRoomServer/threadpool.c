@@ -60,7 +60,7 @@ static int threadExitClrResources(threadpool_t *pool)
 }
 
 /* 本质是一个消费者 */
-void * threadHander(void *arg)
+static void * threadHander(void *arg)
 {
     /* 设置线程分离 让系统自动回收资源 */
     pthread_detach(pthread_self());

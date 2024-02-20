@@ -108,6 +108,8 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
 
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
 
+/* 退出登录时的资源回收 */
+void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) ;
 
 
 #endif

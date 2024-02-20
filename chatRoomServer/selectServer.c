@@ -456,42 +456,55 @@ void* handleClient(void* arg)
                     /*判断好友是否在线 在线返回好友套接字fd */
                     int ret = searchFriendIfOnline(onlineTable, friendName);
 
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                    if (ret > 0)   /*此时好友在线*/
-                    {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
-                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                        /*发送消息给好友*/
-                        
-                        
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        if (ret > 0)   /*此时好友在线*/
+                        {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                            strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                            /*发送消息给好友*/
+                            
+                            
+                        }
+                        // if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
+                        // {
+                        //     memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                        //     strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
+                        //     send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                        //     memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                        //     continue;
+                        // }
+                        if (ret == -1)
+                        {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
+                            strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                            continue;
+                        }
                     }
-                    // if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
-                    // {
-                    //     memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                    //     strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
-                    //     send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                    //     memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                    //     continue;
-                    // }
-                    if (ret == -1)
-                    {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));
-                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                        continue;
-                    }
-                }
-            }   
+                }   
             else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
             {
                 //删除好友
             }
             else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
             {
-                //退出登录
+                
+            memset(sendBuffer, 0, sizeof(sendBuffer));
+            strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
+            printf("%s\n", sendBuffer);
+
+            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+            
+            memset(sendBuffer, 0, sizeof(sendBuffer));
+#if 1
+                int delete_name = convertToInt(Message->name);
+                hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
+                printf("客户端退出\n");
+#endif
+                break;
             }
             else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
             {
@@ -502,10 +515,10 @@ void* handleClient(void* arg)
                 printf("输入有误，请重新选择\n");
                 continue;
 
-                
-
-            }
             
+
+        }
+        
             
 
             
@@ -513,6 +526,7 @@ void* handleClient(void* arg)
         
         // ... 原先的代码 ...
     }
+    
     
     // 原先的代码结束
 
