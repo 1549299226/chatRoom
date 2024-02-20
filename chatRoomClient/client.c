@@ -159,7 +159,8 @@ int main()
                 {
                     printf("注册成功\n");
                     loginInterface();
-                    flag = 0;
+                    memset(flag, 0, sizeof(flag));
+
                     continue;
                 }
             }
@@ -179,6 +180,17 @@ int main()
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 if (!strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
                 {
+                    printf("登录成功\n");
+                    sleep(2);
+                    enterInterface();
+                    memset(flag, 0, sizeof(flag));
+
+                    break;
+
+
+                }
+                else
+                {
                     memset(Message->accountNumber, 0, sizeof(Message->accountNumber));
                     memset(Message->name, 0, sizeof(Message->name));
                     memset(Message->password, 0, sizeof(Message->password));
@@ -186,19 +198,13 @@ int main()
                     printf("登陆失败\n");
                     sleep(2);
                     continue;
-                }
-                else
-                {
-                    printf("登录成功\n");
-                    sleep(2);
-                    enterInterface();
-                    flag = 0;
-                    break;
+
                 }
             }
             else
             {
                 printf("输入有误，请重新选择\n");
+                /*死循环*/
                 continue;
            
             }
@@ -208,18 +214,21 @@ int main()
         while (1)
         {
             mainInterface();
+            printf("请选择\n");
             scanf("%s", flag);
             send(sockfd, flag, sizeof(flag), 0);
 
             if (!strncmp(flag, "1", sizeof(flag)))
             {
                 //添加好友
+
             }
             
             /*聊天功能*/
             else if (!strncmp(flag, "2", sizeof(flag)))
             {
-                flag = 0;
+                memset(flag, 0, sizeof(flag));
+
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 printf("%s\n", recvBuffer);
                 //查看好友 
@@ -229,17 +238,39 @@ int main()
                 
                 scanf("%s", flag);
                 send(sockfd, flag, sizeof(flag), 0);
-                if (!strncmp(flag, "1", sizeof(flag)))
+                if (!strncmp(flag, "1", sizeof(flag)))/*群聊功能*/
                 {
+                    memset(flag, 0, sizeof(flag));
+                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                    printf("%s\n", recvBuffer);
+                    sleep(1);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    continue;
                     /*群聊 to do..*/
                 }
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
+                    memset(flag, 0, sizeof(flag));
+
                     /*先清零*/
                         
                     printf("以下是所有好友的信息:\n");
-                    balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
+                    if (client == NULL)
+                    {
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        strncpy(sendBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(sendBuffer));
+                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        printf("您暂时没有好友无法聊天,返回上一级\n");
+                        sleep(3);
+                        continue;
+                    }
+                    else
+                    {
+                        balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
+                    }
+                    
                     while (1)
                     {
                         printf("1、输入私聊对象的名字进行聊天\n");

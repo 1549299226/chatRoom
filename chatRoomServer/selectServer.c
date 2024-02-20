@@ -241,17 +241,25 @@ int main()
                     chatRoomObjAnalyze(recvBuffer, Message, obj);
                     if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable))
                     {
-
+                        
+                        
+                        strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        
+                        break;
+                        
+                        
+                    }
+                    else
+                    {
+                         
+                        
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         strncpy(sendBuffer, "登录失败", sizeof(sendBuffer) - 1);
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                         continue;
-                    }
-                    else
-                    {
-                        strncpy(sendBuffer, "登录成功", sizeof(sendBuffer) - 1);
-                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                        break;
+                       
+                        
                     }
                 }
             }
@@ -260,10 +268,12 @@ int main()
             while (1)
             {
                 //查看选项
+                printf("进入主界面\n");
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                 {
                     //添加好友
+
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                 {
@@ -278,15 +288,27 @@ int main()
                     if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-
+                        strncpy(sendBuffer, "群聊功能尚未完善，先返回上一级", sizeof(sendBuffer));
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer));                       
+                        printf("群聊功能尚未完善，先返回上一级\n");
+                        continue;
                         /*群聊 to do..*/
                     }
                     else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-
+                        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                        if (!strncmp(recvBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(recvBuffer)))
+                        {
+                            printf("%s\n", recvBuffer);
+                            memset(recvBuffer, 0, sizeof(recvBuffer));
+                            continue;
+                        }
                         /*询问好友是否在线 在线返回好友套接字fd */
+                        recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                         ret = serchFriendIfOnline(online, recvBuffer);
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
                         if (ret > 0)   /*此时好友在线*/
                         {
                             memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
@@ -302,7 +324,7 @@ int main()
                             send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
                         }
-                        if (ret = -1)
+                        if (ret == -1)
                         {
                             memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
                             strncpy(sendBuffer, "此时好友不在线", sizeof(sendBuffer));

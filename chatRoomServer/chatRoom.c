@@ -21,7 +21,7 @@
 #define CONTENT_MAX 128
 
 /*数据库的宏*/
-#define DBHOST "127.0.0.1"
+#define DBHOST "localhost"
 #define DBUSER "root"
 #define DBPASS "1"
 #define DBNAME "chatRoom"
