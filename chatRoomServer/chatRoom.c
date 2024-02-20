@@ -622,12 +622,12 @@ int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineT
 
 
 /*添加好友*/
-int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *Info, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
+int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
     printf("请选择 1.昵称查找 2.用账号查找\n");
-    int flag = 0;
+    char * flag = "0";
     
-    chatRoomMessage *friendMessage =(chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     memset(friendMessage, 0, sizeof(friendMessage));
     
     char buffer[BUFFER_SIZE];
@@ -636,11 +636,11 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
     while (1)
     {
-        scanf("%d", &flag);
+        scanf("%s", flag);
 
         
 
-        if (flag == 1)      //用账号查找  
+        if (!strncmp(flag, "1", sizeof(flag)))      //用账号查找  
         {
             scanf("%s", friendMessage->accountNumber);
             
@@ -670,12 +670,14 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     }
                     mysql_free_result(res);  // 释放查询结果集
                 }
-                flag = 0;                   /*这里少东西还，*/
+
+                memset(flag, 0, sizeof(flag));
+                  /*这里少东西还，*/
                 printf("是否要添加此人为好友:\n1.是   2.否\n");
-                scanf("%d", &flag);
-                if (flag == 1)
+                scanf("%s", flag);
+                if (!strncmp(flag, "1", sizeof(flag)))
                 {
-                    //创建好友表   有问题   好友表没有标记出来
+                    
                     snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
@@ -687,12 +689,13 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                     node = (friendNode *)friendMessage;
                     //插入到好友列表
                     balanceBinarySearchTreeInsert(client, friendMessage);
+                    return 0;
 
                 }    
-                else if (flag == 2)
+                else if (!strncmp(flag, "2", sizeof(flag)))
                 {
                     printf("返回成功\n");
-                    exit(0);
+                    continue;
                 }
                 else
                 {
@@ -701,7 +704,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
                 }
             }
         }
-        else if (flag == 2)     //用昵称查找
+        else if (!strncmp(flag, "2", sizeof(flag)))     //用昵称查找
         {
             scanf("%s", friendMessage->name);
             char buffer[BUFFER_SIZE];
@@ -731,25 +734,23 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
                 flag = 0;                   /*这里少东西还，*/
                 printf("是否要添加此人为好友:\n1.是   2.否\n");
-                scanf("%d", &flag);
-                if (flag == 1)
+                scanf("%s", flag);
+                if (!strncmp(flag, "1", sizeof(flag)))
                 {
                     //创建好友表   有问题   好友表没有标记出来
+                    //插入到好友列表
                     snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber name) VALUES ('%s', '%s')", Message->accountNumber, friendMessage->accountNumber, friendMessage->name);
                     if (mysql_query(conn, buffer))
                     {
                         printf("系统错误，添加好友失败\n");
                         exit(-1);
                     }
-                    friendNode *node = (friendNode *)malloc(sizeof(friendNode));
-                    memset(node, 0, sizeof(node));
-                    node = (friendNode *)friendMessage;
-                    //插入到好友列表
-                    balanceBinarySearchTreeInsert(client, friendMessage);
+
                     //添加好友到树中
                     balanceBinarySearchTreeInsert(client, friendMessage);
+                    return 0;
                 }    
-                else if (flag == 2)
+                else if (!strncmp(flag, "2", sizeof(flag)))
                 {
                     printf("返回成功\n");
                     exit(0);
