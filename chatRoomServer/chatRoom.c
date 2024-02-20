@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "chatRoom.h"
 #include <stdlib.h>
+#include <errno.h>
 #include <error.h>
 #include <string.h>
 #include <strings.h>
@@ -9,6 +10,7 @@
 #include <sys/stat.h>
 #include "hashtable.h"
 #include <json-c/json_object.h>
+#include <limits.h>
 
 #define PASSWORD_MAX 8  
 #define PASSWORD_MIN 6
@@ -21,7 +23,7 @@
 #define CONTENT_MAX 128
 
 /*数据库的宏*/
-#define DBHOST "127.0.0.1"
+#define DBHOST "localhost"
 #define DBUSER "root"
 #define DBPASS "1"
 #define DBNAME "chatRoom"
@@ -607,17 +609,6 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
     return 0;
 }
 
-/* 在线列表的插入 */
-int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
-{
-    if (!hashTableInsert(onlineTable, *(int *)Message->name, sockfd))
-    {
-        return -1;
-    }
-    return 0;
-}
-
-
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *client) /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 {
@@ -628,14 +619,49 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 }
 
 
+/*字符串转整型*/
+int convertToInt(const char *str) 
+ {
+    char *endptr;
+    errno = 0;
+    long result = strtol(str, &endptr, 10);
+    if ((errno == ERANGE && (result == LONG_MAX || result == LONG_MIN)) || (errno != 0 && result == 0)) {
+        // 转换失败
+        return 0;
+    }
+    if (endptr == str) {
+        // 没有有效的数字
+        return 0;
+    }
+    if (result > INT_MAX || result < INT_MIN) {
+        // 超出int范围
+        return 0;
+    }
+    return (int) result;
+}
+
+/* 在线列表的插入 */
+int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
+{
+    int name = convertToInt(Message->name);
+    if (!hashTableInsert(onlineTable, name, sockfd))
+    {
+        return -1;
+    }
+    return 0;
+}
+
+
+
 
 /*输入好友名字 判断好友是否在线*/
-int serchFriendIfOnline(Friend * online, char * name)
+int searchFriendIfOnline(HashTable * onlineTable, char * name)
 {
     int sockfd_onlineFriend = 0;
-    if (online == NULL)
+    int hash_name = convertToInt(name);
+    if (onlineTable == NULL)
     {
-        printf("无好友\n");
+        printf("无在线好友\n");
         return 0;
     }
     if (name == NULL)
@@ -643,17 +669,33 @@ int serchFriendIfOnline(Friend * online, char * name)
         printf("好友名输入错误\n");
         return 0;
     }
-    int * mapVal = NULL;
+    int *mapVal = (int *)malloc(sizeof(int));
+    if (mapVal == NULL)
+    {
+        printf("内存分配失败\n");
+        return -1;
+    }
+#if 0
     HashTable *pHashtable = (HashTable *) malloc(sizeof(HashTable));
+    if (pHashtable == NULL) 
+    {
+        printf("内存分配失败\n");
+        return -1;
+    }
     memset((HashTable *)pHashtable, 0, sizeof(HashTable));
+
     pHashtable->slotNums = SLOTNUMS_MAX;
     pHashtable->compareFunc = compareFunc;
-    if (! hashTableGetAppointKeyValue(pHashtable, (int)*name, mapVal))   /*找到在线好友的句柄*/ 
+#endif
+    if (! hashTableGetAppointKeyValue(onlineTable, hash_name, mapVal))   /*找到在线好友的句柄*/ 
     {
         sockfd_onlineFriend = *mapVal;
+        free(mapVal);
         return sockfd_onlineFriend;
     } 
-    return -1;
+    free(mapVal); // 释放 mapVal 的内存
+    // free(pHashtable);
+    return -2;
 }
 
 /* 指定好友是否在线 */
@@ -1063,4 +1105,25 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         json_object_put(obj);
     }
     return 0;
+}
+
+/*解析json字符串的好友姓名*/
+const char * resolveFriendName(char * buffer, chatContent * chat)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    struct json_object * obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    struct json_object * friendNameObj = json_object_object_get(obj, "friendName");
+    if (friendNameObj != NULL) 
+    {
+        const char * friendName = json_object_get_string(friendNameObj);
+        strncpy(chat->friendName, friendName, sizeof(chat->friendName) - 1);
+        chat->friendName[sizeof(chat->friendName) - 1] = '\0';
+        return chat->friendName;
+    }
+    return NULL;
 }
