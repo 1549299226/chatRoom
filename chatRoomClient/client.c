@@ -282,7 +282,7 @@ int main()
                                 else if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
                                 {
                                     printf("%s\n", recvBuffer);
-                                    continue;
+                                    break;
                                 }
                             }
                             else if (!strncmp(flag, "2", sizeof(flag)))
@@ -302,10 +302,19 @@ int main()
                     }
                     else if (!strncmp(flag, "2", sizeof(flag)))     //用昵称查找
                     {
+                        recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                        printf("%s\n", recvBuffer);
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+
                         scanf("%s", friendMessage->name);
                         send(sockfd, friendMessage->name, sizeof(friendMessage->name), 0);
                         memset(friendMessage->name, 0, sizeof(friendMessage->name));
-                        if (!strncmp(recvBuffer, "添加失败，查询此人失败,请重新查询", sizeof(recvBuffer)))
+                        
+                        recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                        printf("查询到的账号:%s\n", recvBuffer);
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        
+                        if (!strncmp(recvBuffer, "添加失败，查询此人失败, 请重新查询", sizeof(recvBuffer)))
                         {
                             printf("%s\n", recvBuffer);
                             memset(flag, 0, sizeof(flag));
@@ -329,7 +338,7 @@ int main()
                                 else if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
                                 {
                                     printf("%s\n", recvBuffer);
-                                    continue;
+                                    break;
                                 }
                             }
                             else if (!strncmp(flag, "2", sizeof(flag)))

@@ -519,50 +519,56 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
     
 }
 
-/*登录*/  /*正确返回0， 错误返回-1*/
-int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn, HashTable * onlineTable) /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+/* 登录 */  /* 正确返回0， 错误返回-1 */
+int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn, HashTable * onlineTable) 
 {
     int ret = 0;
 
     ret = determineIfItExists(Message, conn);
-    if (ret == -1)
+    if (ret == -1) 
     {
         return -1;
     }
 
-    if (!chatRoomOnlineTable(Message, fd, onlineTable))    /*登录成功后将其放入在线列表中*/
-    {
+    if (!chatRoomOnlineTable(Message, fd, onlineTable)) 
+    {    /* 登录成功后将其放入在线列表中 */
         printf("插入在线列表失败\n");
         exit(-1);
     }
+    
+    chatRoomMessage * friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+    memset(friendMessage, 0, sizeof(friendMessage));
+    friendMessage->accountNumber = (char *)malloc(ACCOUNTNUMBER);
+    memset(friendMessage->accountNumber, 0, ACCOUNTNUMBER);
+    friendMessage->name = (char *)malloc(NAMESIZE);
+    memset(friendMessage->name, 0, NAMESIZE);
 
     printf("---name:%s\n", Message->accountNumber);
-    
-    mysql_free_result(mysql_store_result(conn));
 
-    MYSQL_RES *mysql_store_result(MYSQL *conn);
-    /*先判断是否有这个表没有则创建有则跳过*/
+    /* 先判断是否有这个表没有则创建有则跳过 */
     char buffer[BUFFER_SIZE << 2];
     memset(buffer, 0, sizeof(buffer));
     snprintf(buffer, sizeof(buffer),
-             "CREATE TABLE IF NOT EXISTS Friend%s ("
-             "accountNumber VARCHAR(50) PRIMARY KEY,"
-             "name VARCHAR(50) NOT NULL UNIQUE,"
-             "FOREIGN KEY (accountNumber) REFERENCES chatRoom(accountNumber)"
-             " ON DELETE CASCADE"
-             " ON UPDATE CASCADE)", Message->accountNumber);
+            "CREATE TABLE IF NOT EXISTS `Friend%s` ("
+            "accountNumber VARCHAR(50) PRIMARY KEY,"
+            "name VARCHAR(50) NOT NULL UNIQUE,"
+            "FOREIGN KEY (accountNumber) REFERENCES chatRoom(accountNumber)"
+            " ON DELETE CASCADE"
+            " ON UPDATE CASCADE)", Message->accountNumber);
 
-    if (mysql_query(conn, buffer))
+    if (mysql_query(conn, buffer)) 
     {
         printf("系统错误，创建失败: %s\n", mysql_error(conn));
         exit(-1);
-    } 
-    /*查询登录人的所有好友，用以之后将其好友放入一个他专属的树中*/
+    }
+
+    /* 查询登录人的所有好友，用以之后将其好友放入一个他专属的树中 */
     memset(buffer, 0, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "SELECT * FROM Friend%s", Message->accountNumber);
-    
+    snprintf(buffer, sizeof(buffer), "SELECT * FROM `Friend%s`", Message->accountNumber);
+
     ret = mysql_query(conn, buffer);
-    if (ret == 0)
+
+    if (ret == 0) 
     {
         MYSQL_RES* result = mysql_store_result(conn);
         int num_rows = mysql_num_rows(result);
@@ -573,43 +579,34 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         else 
         {
             // 获取查询结果集
-            MYSQL_ROW row;    
-            result = mysql_store_result(conn);
-            if (result == NULL) 
-            {
-                printf("获取查询结果失败: %s\n", mysql_error(conn));
-                exit(-1);
-            }
+            MYSQL_ROW row;
             // 遍历结果集
-            while ((row = mysql_fetch_row(result)) != NULL) 
+            if ((row = mysql_fetch_row(result)) != NULL) 
             {
                 // 以字符串形式打印每个字段的值
-                for (int idx = 0; idx < mysql_num_fields(result); idx++) 
-                {
-                    balanceBinarySearchTreeInsert(client, row[idx]);
-                    printf("%s ", row[idx]);
-                }
                 
+                    if ((row = mysql_fetch_row(result)) != NULL) 
+                    {
+                        printf("575 ---- %s\n", row[0]);
+                        snprintf(friendMessage->accountNumber, ACCOUNTNUMBER + 1, "%s", row[0]);
+                        snprintf(friendMessage->name, NAMESIZE + 1, "%s", row[1]);
+                        printf("%s ", row[1]);
+                        
+                        
+                    }
+                    balanceBinarySearchTreeInsert(client, friendMessage);
             }
-                    
         }
+        // 释放查询结果集
         mysql_free_result(result);
-
     }
     else 
     {
         printf("查询失败: %d - %s\n", mysql_errno(conn), mysql_error(conn));
         return -1;
     }
-    
-    
-
-    // chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
-    // memset(friendMessage, 0, sizeof(friendMessage));
-    
 
     return 0;
-    
 }
 
 /*添加好友*/
