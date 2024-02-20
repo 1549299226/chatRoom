@@ -65,7 +65,7 @@ int chatRoomInsert(chatRoomMessage * Message, MYSQL * conn); /*账号不能跟�
 int chatRoomLogIn(int fd, chatRoomMessage * Message, Friend *client, MYSQL * conn, HashTable * onlineTable);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 
 /*输入好友名字 判断好友是否在线*/
-int serchFriendIfOnline(Friend * online, char * name);
+int searchFriendIfOnline(HashTable * onlineTable, char * name);
 
 /*添加好友*/
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
@@ -110,4 +110,9 @@ int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * 
 int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * obj);
 
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
+
+/*解析json字符串的好友姓名*/
+const char * resolveFriendName(char * buffer, chatContent * chat);
+/*字符串转整型*/
+int convertToInt(const char *str) ;
 #endif

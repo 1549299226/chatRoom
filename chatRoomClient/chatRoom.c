@@ -2,6 +2,7 @@
 #include "chatRoom.h"
 #include <stdlib.h>
 #include <error.h>
+#include <errno.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
@@ -760,8 +761,43 @@ int chatRoomOnlineOrNot(chatRoomMessage *Message, json_object *obj) /*每过一�
     
 }
 
+static char *createJSONMessage(chatContent *chat);
+// 创建一个函数来将 chatContent 结构体转换为 JSON 字符串
+static char *createJSONMessage(chatContent *chat)
+{
+    struct json_object *jobj = json_object_new_object();
+    
+    json_object_object_add(jobj, "friendName", json_object_new_string(chat->friendName));
+    json_object_object_add(jobj, "myName", json_object_new_string(chat->myName));
+    json_object_object_add(jobj, "content", json_object_new_string(chat->content));
+    json_object_object_add(jobj, "chatTime", json_object_new_int((int)*chat->chatTime));
+
+    const char *jsonStr = json_object_to_json_string(jobj);
+
+    char *result = strdup(jsonStr);
+
+    json_object_put(jobj); // 释放 jobj 对象
+    free(jsonStr); // 释放 jsonStr
+    free(result);
+    return result;
+}
+
+static void truncateString(char *str);
+/*判断发送的消息是否超过140字符*/
+static void truncateString(char *str)
+{
+    int len = strlen(str);
+    if (len > SEND_BUFFER) 
+    {
+        printf("发送的消息超过140字符,只保留140字符\n");
+        str[SEND_BUFFER - 1] = '\0';
+        
+    }
+}
+
+
 /*建立私聊的联系*/
-int chatRoomPrivateChat( char * chatMsg, int sockfd) 
+int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chatRoomMessage * message) 
 /*建立一个联系只有双方能够聊天*/ /*判断其书否在线， 是否存在这个好友*/
 { 
     while (1)
@@ -782,18 +818,29 @@ int chatRoomPrivateChat( char * chatMsg, int sockfd)
                 printf("1、请输入你要发送的消息(不超过140字符): 2、退出返回上一级\n");
                 if (!strncmp(flag, "1", sizeof(flag)))  /*输入发送的消息*/
                 {
-                    scanf("%s", chatMsg);   /*输入要发送的内容*/
+                    memset(chat->content, 0, sizeof(chat->content));
+                    scanf("%s", chat->content);   /*输入要发送的内容*/
                     if(getchar() == '\n')
                     {
                         printf("输入的内容为空，请重新输入\n");
                         continue;
                     }
-                    strncpy(sendBuffer, chatMsg, sizeof(sendBuffer));
+                    /*判断发送的消息是否超过140字符*/
+                    truncateString(chat->content);
+                    
+                    chat->chatTime = time(NULL);
+                    chat->friendName = friendName;
+                    chat->myName = message->name;
+
+                    char * json_chat = createJSONMessage(&chat);
+
+                    strncpy(sendBuffer, json_chat, sizeof(sendBuffer));
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
                     ret = send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                     if (ret < 0)
                     {
-                        perror("send error");
-                        printf("发送失败,返回上一级\n");
+                        printf("发送失败：%s\n", strerror(errno));
+                        printf("返回上一级\n");
                         continue;
                     }
                     else if (!strncmp(flag, "2", sizeof(flag))) 
@@ -805,6 +852,7 @@ int chatRoomPrivateChat( char * chatMsg, int sockfd)
                         printf("无效的输入，返回上一级\n");
                         continue;
                     }
+                    free(json_chat);
                 }
 
                 

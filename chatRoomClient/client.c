@@ -432,15 +432,10 @@ int main()
                             memset(sendBuffer, 0, sizeof(sendBuffer));
                             if (friendIsExit(client, friendMessage, friendMessage->friendName) == 1) /*好友存在时*/
                             {
-                                /*发送好友的名字到服务端*/
-                                strncpy(sendBuffer, friendMessage->friendName, sizeof(sendBuffer));
-                                ret = send(sockfd, sendBuffer, sizeof(flag), 0);
-                                if (ret < 0)      /*发送失败*/
-                                {
-                                    perror("send Is the friend online error");
-                                    memset(sendBuffer, 0, sizeof(sendBuffer));
-                                    continue;
-                                }
+#if 1
+                                chatRoomPrivateChat(friendMessage->friendName, sockfd, friendMessage, Message);
+                                
+                                
                                 /*清空缓冲区*/
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 /*接收好友是否在线的信息*/
@@ -466,9 +461,8 @@ int main()
                                     if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
                                     {
                                         printf("好友在线\n");
-                                        char * chatMsg = NULL;
-                                        /*发送消息  to do ..*/
-                                        chatRoomPrivateChat(chatMsg, sockfd);
+                                        
+                                        
                                     }
                                     // if (!strncmp(recvBuffer, "你没有好友 或者好友用户名不正确", sizeof(recvBuffer)))
                                     // {
@@ -477,11 +471,12 @@ int main()
                                     // }
                                     if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
                                     {
-                                        printf("此时好友不在线, 返回上一级\n");
+                                        printf("此时好友不在线, 设计为不通信，返回上一级\n");
                                         continue;
                                     }
                                 
                                 }
+#endif
                             }
 
                         }

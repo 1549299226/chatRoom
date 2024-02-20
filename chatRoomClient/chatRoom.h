@@ -74,7 +74,7 @@ int friendIsExit(Friend *Info, ELEMENTTYPE data, char * name);
 int chatRoomOnlineOrNot(chatRoomMessage * Message, json_object * obj);    /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 
 /*建立私聊的联系*/
-int chatRoomPrivateChat( char * chatMsg, int sockfd) ; /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/
+int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chatRoomMessage * message); /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/
 
 /*建立一个群聊的联系，建立完后将其存储起来*/
 int chatRoomGroupChat(chatRoomMessage * Message, json_object * obj);     /*通过UDP进行群发，一些人能够接到*/   /*有点问题后面再想*/
