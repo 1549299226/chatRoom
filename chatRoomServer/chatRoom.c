@@ -83,7 +83,9 @@ int hashTableCompare(void *arg1, void *arg2)
 }
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatContent **friendMessage, json_object ** obj, Friend ** Info, Friend **client, Friend ** online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node, HashTable ** onlineTable)  /*先这些后面再加*/
+
+// int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -152,6 +154,33 @@ int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_ob
 
     /*聊天时间初始化*/
     time((*friendMessage)->chatTime);
+
+    //群聊结构体初始化
+    (*groupChatInfo) = (groupChat *) malloc(sizeof(groupChat));
+    memset((*groupChatInfo), 0, sizeof(groupChatInfo));
+    //初始化群名
+    (*groupChatInfo)->groupChatName = (char *)malloc(sizeof(char) * NAMESIZE);
+    if ((*groupChatInfo)->groupChatName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*groupChatInfo)->groupChatName , sizeof(char) * NAMESIZE);
+    //初始化群成员名字
+    (*groupChatInfo)->membersName = (char *)malloc( sizeof(char) * NAMESIZE);
+    if ((*groupChatInfo)->membersName == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*groupChatInfo)->membersName, sizeof(char) * NAMESIZE);
+    //初始化群聊内容
+    (*groupChatInfo)->groupChatContent = (char*)malloc(sizeof(char) * CONTENT_MAX);
+    if ((*groupChatInfo)->groupChatContent == NULL)
+    {
+        return MALLOC_ERROR;
+    }
+    bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
+    //初始化聊天时间
+    time((*groupChatInfo)->groupChatTime);
 
 
     // 创建一个json对象

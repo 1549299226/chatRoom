@@ -92,11 +92,16 @@ int printStruct(void *arg)
     return ret;
 }
 
+void * handle_group_chat(void * arg)
+{
+
+}
 
 void* handleClient(void* arg) 
 {
     pthread_detach(pthread_self());
     int acceptfd = *((int*)arg);  // 获取acceptfd
+    pthread_t tid_groupchat;
 
     chatRoomMessage *Message = NULL;
     json_object *obj;
@@ -108,9 +113,10 @@ void* handleClient(void* arg)
     HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
     chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
+    groupChat * groupChatInfo = NULL;
     onlineHash->hashName = (char *)malloc(NAMESIZE); 
     onlineHash->sockfd = 0;
-    chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
 
 
     char recvBuffer[BUFFER_SIZE];
@@ -485,6 +491,23 @@ void* handleClient(void* arg)
                     memset(sendBuffer, 0, sizeof(sendBuffer));                       
                     printf("群聊功能尚未完善，先返回上一级\n");
                     continue;
+
+                    memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                    strncpy(sendBuffer, "1、请输入群聊名进行聊天2、没有群聊,进群", sizeof(sendBuffer));     
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);                
+                    memset(sendBuffer, 0, sizeof(sendBuffer)); 
+
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
+                    {
+                        
+                    }
+
+
+
+                    //开一个线程处理群聊
+                    pthread_create(&tid_groupchat, NULL, handle_group_chat, NULL);
                     /*群聊 to do..*/
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
@@ -636,8 +659,9 @@ int main()
     Friend * online = NULL;
     HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
-    
-    chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
+    groupChat * groupChatInfo = NULL;
+
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;

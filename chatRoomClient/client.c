@@ -250,7 +250,7 @@ int main()
             scanf("%s", flag);
             send(sockfd, flag, sizeof(flag), 0);//发送选择给服务端
             //添加好友
-            if (!strncmp(flag, "1", sizeof(flag)))
+            if (!strncmp(flag, "1", sizeof(flag)))                                                                                                                                                                                             
             {      
                 chatRoomMessage *friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
                 memset(friendMessage, 0, sizeof(friendMessage)); 
@@ -416,7 +416,23 @@ int main()
                     sleep(1);
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     continue;
+
                     /*群聊 to do..*/
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                    printf("%s\n", recvBuffer);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                    scanf("%s", flag);
+                    send(sockfd, flag, sizeof(flag), 0);
+                    if (!strncmp(flag, "1", sizeof(flag)))//输入群聊名称进行聊天
+                    {
+                        memset(flag, 0, sizeof(flag));
+                        //scanf("%s", );/*to do*/
+
+                    }
+
+ 
                 }
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
@@ -565,4 +581,5 @@ int main()
     }
     close(sockfd);
     return 0;
+}
 }
