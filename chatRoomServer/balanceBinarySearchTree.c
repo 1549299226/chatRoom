@@ -31,11 +31,11 @@ static int balanceBinarySearchTreeNodeHasOnechildren(AVLTreeNode *node);
 /* 判断二叉搜索树度为0 */
 static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node);
 /* 前序遍历 */
-static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
+static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
 /* 中序遍历 */
-static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
+static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
 /* 后序遍历 */
-static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node);
+static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
 /* 获取当前结点的前驱结点 */
 static AVLTreeNode * bstreeNodePreDecessor(AVLTreeNode *node);
 /* 获取当前结点的后继结点 */
@@ -67,7 +67,7 @@ static int AVLTreeCurrentNodeRotateRight(BalanceBinarySearchTree *pBstree, AVLTr
 
 
 /* 二叉搜索树的初始化 */
-int balanceBinarySearchTreeInit(BalanceBinarySearchTree **pBstree, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val))
+int balanceBinarySearchTreeInit(BalanceBinarySearchTree **pBstree, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*compareFunc1)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2))
 {
     int ret = 0;
     BalanceBinarySearchTree * bstree = (BalanceBinarySearchTree *)malloc(sizeof(BalanceBinarySearchTree) * 1);
@@ -86,6 +86,7 @@ int balanceBinarySearchTreeInit(BalanceBinarySearchTree **pBstree, int (*compare
 
         /* 钩子函数在这边赋值. */
         bstree->compareFunc = compareFunc;
+        bstree->compareFunc1 = compareFunc1;
         /* 钩子函数包装器 自定义打印. */
         bstree->printFunc = printFunc;
     }
@@ -606,7 +607,7 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
 
 /* 前序遍历 */
 /* 根结点 左子树 右子树 */
-static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
+static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer)
 {
     int ret = 0;
     if (node == NULL)
@@ -614,17 +615,17 @@ static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
         return ret;
     }
     /* 根结点 */
-    pBstree->printFunc(node->data);
+    pBstree->printFunc(node->data, buffer);
     /* 左子树 */
-    preOrderTravel(pBstree, node->left);
+    preOrderTravel(pBstree, node->left, buffer);
     /* 右子树 */
-    preOrderTravel(pBstree, node->right);
+    preOrderTravel(pBstree, node->right, buffer);
 }
 /* 二叉搜索树的前序遍历 */
-int balanceBinarySearchTreePreOrderTravel(BalanceBinarySearchTree *pBstree)
+int balanceBinarySearchTreePreOrderTravel(BalanceBinarySearchTree *pBstree, char * buffer)
 {
     int ret = 0;
-    preOrderTravel(pBstree, pBstree->root);
+    preOrderTravel(pBstree, pBstree->root, buffer);
     return ret;
 }
 
@@ -637,7 +638,7 @@ int balanceBinarySearchTreePreOrderTravel(BalanceBinarySearchTree *pBstree)
 
 /* 中序遍历 */
 /* 左子树 根结点 右子树 */
-static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
+static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer)
 {
     int ret = 0;
     if (node == NULL)
@@ -645,24 +646,24 @@ static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
         return ret;
     }
     /* 左子树 */
-    inOrderTravel(pBstree, node->left);
+    inOrderTravel(pBstree, node->left, buffer);
     /* 根结点 */
-    pBstree->printFunc(node->data);
+    pBstree->printFunc(node->data, buffer);
     /* 右子树 */
-    inOrderTravel(pBstree, node->right);
+    inOrderTravel(pBstree, node->right, buffer);
 }
 
 /* 二叉搜索树的中序遍历 */
-int balanceBinarySearchTreeInOrderTravel(BalanceBinarySearchTree *pBstree)
+int balanceBinarySearchTreeInOrderTravel(BalanceBinarySearchTree *pBstree, char * buffer)
 {
     int ret = 0;
-    inOrderTravel(pBstree, pBstree->root);
+    inOrderTravel(pBstree, pBstree->root, buffer);
     return ret;
 }
 
 /* 后序遍历 */
 /* 左子树 右子树 根结点 */
-static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
+static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer)
 {
     int ret = 0;
     if (node == NULL)
@@ -670,23 +671,23 @@ static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node)
         return ret;
     }
     /* 左子树 */
-    postOrderTravel(pBstree, node->left);
+    postOrderTravel(pBstree, node->left, buffer);
     /* 右子树 */
-    postOrderTravel(pBstree, node->right);
+    postOrderTravel(pBstree, node->right, buffer);
     /* 根结点 */
-    pBstree->printFunc(node->data);
+    pBstree->printFunc(node->data, buffer);
 }
 
 /* 二叉搜索树的后序遍历 */
-int balanceBinarySearchTreePostOrderTravel(BalanceBinarySearchTree *pBstree)
+int balanceBinarySearchTreePostOrderTravel(BalanceBinarySearchTree *pBstree, char * buffer)
 {
     int ret = 0;
-    postOrderTravel(pBstree, pBstree->root); 
+    postOrderTravel(pBstree, pBstree->root, buffer); 
     return ret;
 }
 
 /* 二叉搜索树的层序遍历 */
-int balanceBinarySearchTreeLevelOrderTravel(BalanceBinarySearchTree *pBstree)
+int balanceBinarySearchTreeLevelOrderTravel(BalanceBinarySearchTree *pBstree, char * buffer)
 {
     int ret = 0;
     DoubleLinkListQueue * pQueue = NULL;
@@ -703,7 +704,7 @@ int balanceBinarySearchTreeLevelOrderTravel(BalanceBinarySearchTree *pBstree)
         #if 0
         printf ("data:%d\n", nodeVal->data);
         #else
-        pBstree->printFunc(nodeVal->data);
+        pBstree->printFunc(nodeVal->data, buffer);
         #endif
         doubleLinkListQueuePop(pQueue);
 
@@ -761,7 +762,7 @@ int balanceBinarySearchTreeIsContainAppointVal(BalanceBinarySearchTree *pBstree,
 
 /* 获取二叉搜索树的高度 */
 /* 层序遍历的思路. */
-int balanceBinarySearchTreeGetHeight(BalanceBinarySearchTree *pBstree, int *pHeight)
+int balanceBinarySearchTreeGetHeight(BalanceBinarySearchTree *pBstree, int *pHeight, char * buffer)
 {
     if (pBstree == NULL)
     {
@@ -787,7 +788,7 @@ int balanceBinarySearchTreeGetHeight(BalanceBinarySearchTree *pBstree, int *pHei
     while(!doubleLinkListQueueIsEmpty(pQueue))
     {
         doubleLinkListQueueTop(pQueue, (void **)&travelNode);
-        pBstree->printFunc(travelNode->data);
+        pBstree->printFunc(travelNode->data, buffer);
         doubleLinkListQueuePop(pQueue);
         levelSize--;
 

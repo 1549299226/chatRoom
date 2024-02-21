@@ -53,6 +53,15 @@ int compareFunc(void *val1, void *val2)
     return key1->real_key - key2->real_key;
 }
 
+int compareFunc1(void *val1, void *val2)
+{
+    chatRoomMessage *node1 = (chatRoomMessage *)val1;
+    chatRoomMessage *node2 = (chatRoomMessage *)val2;
+
+    int ret = strncmp(node1->name, node2->name, sizeof(NAMESIZE));
+    return ret;
+}
+
 static int fileEixt(const char * filePath);
 
 
@@ -60,6 +69,8 @@ static int fileEixt(const char * filePath);
 /*输入地址的静态*/
 static int inputPath (char * path);
 
+//获取指定联系人的位置
+static void * baseAppointValGetchatRoomSelect(Friend *client, ELEMENTTYPE data);
 
 
 static int accountRegistration(char * accountNumber , MYSQL * conn);    //判断账号是否合法
@@ -83,7 +94,7 @@ int hashTableCompare(void *arg1, void *arg2)
 }
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*compareFunc1)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), friendNode *node, HashTable ** onlineTable) /*先这些后面再加*/
 {
     int ret = 0;
 
@@ -164,11 +175,11 @@ int chatRoomInit(chatRoomMessage **Message, chatContent **friendMessage, json_ob
         return -1;
     }
     // 将用户列表初始化
-    balanceBinarySearchTreeInit(Info, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(Info, compareFunc, compareFunc1, printFunc);
 
-    balanceBinarySearchTreeInit(client, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(client, compareFunc, compareFunc1, printFunc);
 
-    balanceBinarySearchTreeInit(online, compareFunc, printFunc);
+    balanceBinarySearchTreeInit(online, compareFunc, compareFunc1, printFunc);
     // 初始化一个好友结点
     node = (friendNode *)malloc(sizeof(friendNode));
     if (node == NULL)
@@ -843,6 +854,36 @@ static int fileEixt(const char * filePath)
     return PATH_ERR;
 }
 
+//获取指定联系人的位置
+static void * baseAppointValGetchatRoomSelect(Friend *client, ELEMENTTYPE data)
+{
+    friendNode * travelNode = client->root;
+    int cmp = 0;
+    while (travelNode != NULL)
+    {
+        printf("864---data--地址%p\n", data);
+        printf("865---client->root--地址%p\n", client->root);
+        printf("866---travelNode->data--地址%p\n", travelNode->data);
+        printf("867---client->compareFunc1--地址%p\n", client->compareFunc1);
+
+        cmp = client->compareFunc1(data, travelNode->data);
+        if (cmp < 0)
+        {
+            travelNode = travelNode->left;
+        }
+        else if (cmp > 0)
+        {
+            travelNode = travelNode->right;
+        }
+        else
+        {
+            /* 找到 */
+            return travelNode->data;
+        }
+    }
+    return NULL;
+}
+
 /*文件传输*/                                                         /*后面再加*/
 int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账号信息找到要发送的人，再通过操作将文件发送过去， 接收到提示要不要接受该文件*/
 {
@@ -896,7 +937,7 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 /*将Message转换成json格式的字符串进行传送*/
 int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj) 
 {
-
+    obj = json_object_new_object();
      // 创建 json 对象并添加字段
     if (json_object_object_add(obj, "accountNumber", json_object_new_string(Message->accountNumber)) != 0) 
     {
@@ -986,7 +1027,7 @@ int chatRoomObjAnalyze(char * buffer, chatRoomMessage * Message, json_object * o
     return 0;
 }
 
-/*将客户端的信息传入json*/ 
+/*将客户端输入的信息传入json*/ 
 int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object * obj) 
 {
     printf("请输入账号\n");
@@ -1170,7 +1211,7 @@ int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj)
 /*将Message转换成json格式的字符串进行传送*/
 int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj) 
 {
-    
+    obj = json_object_new_object();
     //  创建 json 对象并添加字段
     if (json_object_object_add(obj, "hashName", json_object_new_string(onlineHash->hashName)) != 0) 
     {
@@ -1194,3 +1235,93 @@ int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj)
     json_object_put(obj);
     return 0;
 }
+
+
+/*将回调中的Message转换成json格式的字符串进行传送*/
+int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj) 
+{
+
+    obj = json_object_new_object();
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "accountNumber", json_object_new_string(Message->accountNumber)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for accountNumber\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "name", json_object_new_string(Message->name)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for name\n");
+        return -1;
+    }
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+
+    // 释放分配的内存
+    json_object_put(obj);
+    return 0;
+}
+
+
+/*将json格式的字符串转换成原来Message*/
+int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * accountNumberObj = json_object_object_get(obj, "accountNumber");
+    if (accountNumberObj != NULL) 
+    {
+        const char * accountNumber = json_object_get_string(accountNumberObj);
+        strncpy(Message->accountNumber, accountNumber, sizeof(Message->accountNumber) - 1);
+        Message->accountNumber[sizeof(Message->accountNumber) - 1] = '\0';
+    }
+
+    struct json_object * nameObj = json_object_object_get(obj, "name");
+    if (nameObj != NULL) 
+    {
+        const char * name = json_object_get_string(nameObj);
+        strncpy(Message->name, name, sizeof(Message->name) - 1);
+        Message->name[sizeof(Message->name) - 1] = '\0';
+    }
+
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
+    return 0;
+}
+
+/* 查看人员信息 */
+int chatRoomSelect(Friend *client,  ELEMENTTYPE data)
+{
+    int ret = 0;
+
+    if (client == NULL)
+    {
+        printf("没有联系人\n");
+    }
+    
+    chatRoomMessage * info = NULL; 
+    chatRoomMessage * val = (chatRoomMessage *)data;
+    
+    info = (chatRoomMessage *)baseAppointValGetchatRoomSelect(client, val);      
+    if (info == NULL)
+    {
+        printf("查无此人\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
