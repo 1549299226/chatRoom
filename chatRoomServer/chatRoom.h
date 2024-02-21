@@ -67,12 +67,17 @@ typedef struct chatHash
     int sockfd;
 }chatHash;
 
+//哈希的比较函数
 int compareFunc(void *val1, void *val2);
+
+//树的比较函数
+int compareFunc1(void *val1, void *val2);
 
 
     
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatContent **friendMessage, json_object ** obj, Friend ** Info, Friend **client, Friend ** online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node, HashTable ** onlineTable);    /*先这些后面再加*/
+//int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatContent **friendMessage, json_object ** obj, Friend ** Info, Friend **client, Friend ** online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node, HashTable ** onlineTable);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatContent **friendMessage, json_object **obj, Friend **Info, Friend **client, Friend ** online, MYSQL **conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*compareFunc1)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), friendNode *node, HashTable ** onlineTable); /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(chatRoomMessage * Message, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
@@ -138,5 +143,13 @@ int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);
 /*将chatHash结构体转化成json字符串*/
 int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj); 
 
+/*将好友信息转换成json类型的字符串*/
+int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/*将json格式的字符串转换成原来Message*/
+int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/* 查看人员信息 */
+int chatRoomSelect(Friend *client,  ELEMENTTYPE data);
 
 #endif

@@ -490,7 +490,6 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
     {
         MYSQL_ROW row;
         memset(row, 0, sizeof(row));
-        friendNode *node = (friendNode *)malloc(sizeof(friendNode));
         while ((row = mysql_fetch_row(res)) != NULL) 
         {
             // 遍历结果集并输出数据
@@ -500,9 +499,8 @@ int chatRoomLogIn(chatRoomMessage *Message, json_object *obj, Friend *client, MY
 
                 // 处理完一行数据后的其他操作
             
-            memset(node, 0, sizeof(node));
-            node = (friendNode *)friendMessage;
-            balanceBinarySearchTreeInsert(client, node);
+            
+            balanceBinarySearchTreeInsert(client, friendMessage);
         }
         // 释放结果集内存
         mysql_free_result(res);  // 释放查询结果集
@@ -1030,7 +1028,7 @@ int chatRoomFileTransfer(chatRoomMessage *Message, json_object *obj) /*通过账
 /*将Message转换成json格式的字符串进行传送*/
 int chatRoomObjConvert(char * buffer, chatRoomMessage * Message, json_object * obj) 
 {
-
+    obj = json_object_new_object();
     //  创建 json 对象并添加字段
     if (json_object_object_add(obj, "accountNumber", json_object_new_string(Message->accountNumber)) != 0) 
     {
@@ -1384,5 +1382,71 @@ int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj)
     printf("1374 --%s\n", buffer);
     // 释放分配的内存
     json_object_put(obj);
+    return 0;
+}
+
+
+/*将回调中的Message转换成json格式的字符串进行传送*/
+int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj) 
+{
+
+    obj = json_object_new_object();
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "accountNumber", json_object_new_string(Message->accountNumber)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for accountNumber\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "name", json_object_new_string(Message->name)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for name\n");
+        return -1;
+    }
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+
+    // 释放分配的内存
+    json_object_put(obj);
+    return 0;
+}
+
+
+/*将json格式的字符串转换成原来Message*/
+int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * accountNumberObj = json_object_object_get(obj, "accountNumber");
+    if (accountNumberObj != NULL) 
+    {
+        const char * accountNumber = json_object_get_string(accountNumberObj);
+        strncpy(Message->accountNumber, accountNumber, sizeof(Message->accountNumber) - 1);
+        Message->accountNumber[sizeof(Message->accountNumber) - 1] = '\0';
+    }
+
+    struct json_object * nameObj = json_object_object_get(obj, "name");
+    if (nameObj != NULL) 
+    {
+        const char * name = json_object_get_string(nameObj);
+        strncpy(Message->name, name, sizeof(Message->name) - 1);
+        Message->name[sizeof(Message->name) - 1] = '\0';
+    }
+
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
     return 0;
 }

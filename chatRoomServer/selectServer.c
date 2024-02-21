@@ -82,13 +82,16 @@ int existenceOrNot(void *arg1, void *arg2)
 }
 
 //自定义打印
-int printStruct(void *arg)
+int printStruct(void *arg1, void *arg2)
 {
     int ret = 0;
-    chatRoomMessage* info = (chatRoomMessage*)arg;
+    chatRoomMessage* info = (chatRoomMessage*)arg1;
+    char * buffer = (char *)arg2;
+    printf("90 -- %s\n", info->name);
     
-    printf("accountNumber:%s\tname:%s\n", 
-             info->accountNumber, info->name);
+    json_object * obj = NULL;
+    printStructObj(buffer, info, obj);
+    printf("94 -- %s\n", buffer);
     return ret;
 }
 
@@ -116,7 +119,7 @@ void* handleClient(void* arg)
     groupChat * groupChatInfo = NULL;
     onlineHash->hashName = (char *)malloc(NAMESIZE); 
     onlineHash->sockfd = 0;
-    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo,&friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
 
 
     char recvBuffer[BUFFER_SIZE];
@@ -333,8 +336,7 @@ void* handleClient(void* arg)
                                 friendMessage->name = name;
                                 //插入到好友列表
                                 balanceBinarySearchTreeInsert(client, friendMessage);
-                                printf("好友列表遍历\n");
-                                balanceBinarySearchTreeInOrderTravel(client);
+      
                                 strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
                                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                 memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -432,8 +434,7 @@ void* handleClient(void* arg)
                                 friendMessage->accountNumber = accountNumber;
                                 friendMessage->name = name;
                                 balanceBinarySearchTreeInsert(client, friendMessage);
-                                printf("好友列表遍历\n");
-                                balanceBinarySearchTreeInOrderTravel(client);
+
                             
                                 strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
                                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
@@ -481,6 +482,7 @@ void* handleClient(void* arg)
 
                 //选择聊天方式    
                 memset(recvBuffer, 0, sizeof(recvBuffer));
+                /*读取聊天方式选择结果*/
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                 
                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
@@ -512,7 +514,11 @@ void* handleClient(void* arg)
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                 {
-                    printf("以下是所有好友的信息:\n");
+                    // memset(recvBuffer, 0, sizeof(recvBuffer));
+                    // recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    char buffer[BUFFER_SIZE];
+                    memset(buffer, 0, sizeof(buffer));
+                    /* 检查该客户有没有好友*/
                     if (client == NULL)
                     {
                         memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -525,23 +531,33 @@ void* handleClient(void* arg)
                     }
                     else
                     {
-                        balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
-                        // memset(sendBuffer, 0, sizeof(sendBuffer));
-                        
+                        /*有好友将好友的信息发给该客户*/
+                        balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
+                        send(acceptfd, buffer, sizeof(buffer), 0);
                     }
-#if 0
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                    memset(buffer, 0, sizeof(buffer));
                     recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                    if (!strncmp(recvBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(recvBuffer)))
+                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                     {
-                        printf("%s\n", recvBuffer);
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-                        continue;
+                        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                        chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                        node->name = (char *)malloc(NAMESIZE);
+                        strncpy(node->name, recvBuffer, NAMESIZE);
+                        printf("520---%s---name:%s--\n", recvBuffer,node->name);
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        /*查找该人员昵称是否为你的好友*/
+                        if (!chatRoomSelect(client, node))
+                        {
+                            strncpy(sendBuffer, "他是你的好友", sizeof(recvBuffer));
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            /*可以开始聊天了*/
+
+                            /*to do...*/
+                        }
                     }
-#endif                   
                     
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
 
                     char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
 
@@ -559,14 +575,6 @@ void* handleClient(void* arg)
                             
                             
                         }
-                        // if (ret == 0)   /*此时没有好友 或者好友用户名不正确*/
-                        // {
-                        //     memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
-                        //     strncpy(sendBuffer, "你没有好友 或者好友用户名不正确", sizeof(sendBuffer));
-                        //     send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                        //     memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                        //     continue;
-                        // }
                         if (ret == -1)
                         {
                             memset(sendBuffer, 0, sizeof(sendBuffer));  /*清空缓存区*/
@@ -661,7 +669,7 @@ int main()
     chatContent * friendMessage = NULL;
     groupChat * groupChatInfo = NULL;
 
-    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;
