@@ -646,9 +646,9 @@ int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineT
     int name = convertToInt(Message->name);
     if (!hashTableInsert(onlineTable, name, sockfd))
     {
-        return -1;
+        return -1;/*成功*/
     }
-    return 0;
+    return 0;/*失败*/
 }
 
 

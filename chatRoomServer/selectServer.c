@@ -572,13 +572,13 @@ int main()
                 else if (!strncmp(recvBuffer, "6", sizeof(recvBuffer)))
                 {
                   
-                memset(sendBuffer, 0, sizeof(sendBuffer));
-                strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
-                printf("%s\n", sendBuffer);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
+                    printf("%s\n", sendBuffer);
 
-                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-               
-                memset(sendBuffer, 0, sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
 #if 1
                     int delete_name = convertToInt(Message->name);
                     hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
@@ -593,6 +593,13 @@ int main()
                 else
                 {
                     printf("输入有误，请重新选择\n");
+#if 0
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    strncpy(sendBuffer, "输入有误，请重新选择", sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    printf("%s\n", sendBuffer);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+#endif
                     continue;
 
                     

@@ -406,7 +406,7 @@ int main()
                 {
                     memset(flag, 0, sizeof(flag));
 
-                    memset(flag, 0, sizeof(flag));
+                    
 
                     /*先清零*/
                         
@@ -434,6 +434,7 @@ int main()
 
                         if (!strncmp(flag, "1", sizeof(flag)))
                         {
+                            memset(flag, 0, sizeof(flag));
                             printf("请输入要聊天的好友姓名\n");
                             scanf("%s", friendMessage->friendName);
                             /*先清零缓冲区*/
@@ -490,11 +491,13 @@ int main()
                         }
                         else if (!strncmp(flag, "2", sizeof(flag)))
                         {
+                            memset(flag, 0, sizeof(flag));
                             mainInterface();
                             break;
                         }
                         else 
                         {
+                            memset(flag, 0, sizeof(flag));
                             printf("无效的输入，请重新输入\n");
                             mainInterface();
                             continue;
@@ -504,29 +507,31 @@ int main()
 
                 }
             }
-            else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
+            else if (!strncmp(flag, "3", sizeof(flag)))
             {
                 //删除好友
             }
-            else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
+            else if (!strncmp(flag, "6", sizeof(flag)))
             {
-                printf("----513\n");
+
                 //退出登录
                 memset(flag, 0, sizeof(flag));
-                memset(sendBuffer, 0, sizeof(sendBuffer));
-                strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
-                printf("%s", sendBuffer);
-                send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+ 
                 
-                sleep(1);
-                memset(sendBuffer, 0, sizeof(sendBuffer));
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer);
+                sleep(3);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+#if 1                
                 logoutCleanup(Message, friendMessage, obj, conn, node);
                 free(flag);
+                quitChatInterface();//进入退出界面
+#endif
                 break;
 
 
             }
-            else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
+            else if (!strncmp(flag, "X", sizeof(flag)))
             {
                 //注销登录
             }
