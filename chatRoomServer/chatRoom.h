@@ -51,6 +51,12 @@ enum STATUS_CODE
     INVALID_ACCESS,
 };
 
+typedef struct chatHash
+{
+    char * hashName;
+    int sockfd;
+}chatHash;
+
 int compareFunc(void *val1, void *val2);
 
 
@@ -62,7 +68,7 @@ int chatRoomInit(chatRoomMessage ** Message, chatContent **friendMessage, json_o
 int chatRoomInsert(chatRoomMessage * Message, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
 
 /*登录*/
-int chatRoomLogIn(int fd, chatRoomMessage * Message, Friend *client, MYSQL * conn, HashTable * onlineTable);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
+int chatRoomLogIn(int fd, chatRoomMessage * Message, Friend *client, MYSQL * conn, HashTable * onlineTable, chatHash * onlineHash);   /*要将账号，密码的信息传到服务端进行验证是否存在，和密码正确与否，因此要用到json_object*/
 
 /*输入好友名字 判断好友是否在线*/
 int searchFriendIfOnline(HashTable * onlineTable, char * name);
@@ -71,11 +77,11 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name);
 int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Friend *client);   /*查找到提示是否要添加该好友，当点了是时，被添加的客户端接收到是否接受该好友，点否则添加不上，发给他一个添加失败，点接受，则将好友插入到你的数据库表中，同时放入以自己的树中*/
 
 /* 在线列表的插入 */
-int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable);
+int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable);
 
 /*每过一段时间向各个客户发一个消息，如果能发出去，判其为在线状态，返回0，不在线则返回0*/
 /* 指定好友是否在线 */
-int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatRoomMessage *Message, int sockfd);
+int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatHash * onlineHash);
 
 /*建立私聊的联系*/
 int chatRoomPrivateChat(chatRoomMessage * Message, json_object * obj);   /*建立一个联系只有双方能够聊天*/  /*判断其书否在线， 是否存在这个好友*/
@@ -101,7 +107,7 @@ int chatRoomClientMeassage(char * buffer, chatRoomMessage * Message, json_object
 int chatRoomOnlineInformation(int sockfd, char * buffer, chatRoomMessage * Message, Friend * online, json_object * obj);   /*用来存放在线人员的昵称以及通信句柄是树结构 通信时会用到*/
 
 /* 在线人员哈希表 */
-int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable);
+int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable);
 
 /*将客户端的信息传入json*/ 
 int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * obj);
@@ -114,5 +120,13 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
 /*解析json字符串的好友姓名*/
 const char * resolveFriendName(char * buffer, chatContent * chat);
 /*字符串转整型*/
-int convertToInt(const char *str) ;
+int convertToInt(const char *str);
+
+/*将json字符串转化成chatHash结构体*/
+int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);
+
+/*将chatHash结构体转化成json字符串*/
+int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj); 
+
+
 #endif

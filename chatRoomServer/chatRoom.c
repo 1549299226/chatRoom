@@ -520,7 +520,7 @@ static int determineIfItExists(chatRoomMessage *Message, MYSQL * conn)
 }
 
 /* 登录 */  /* 正确返回0， 错误返回-1 */
-int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn, HashTable * onlineTable) 
+int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn, HashTable * onlineTable, chatHash * onlineHash) 
 {
     int ret = 0;
 
@@ -530,12 +530,6 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         return -1;
     }
 
-    if (!chatRoomOnlineTable(Message, fd, onlineTable)) 
-    {    /* 登录成功后将其放入在线列表中 */
-        printf("插入在线列表失败\n");
-        exit(-1);
-    }
-    
     chatRoomMessage * friendMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
     memset(friendMessage, 0, sizeof(friendMessage));
     friendMessage->accountNumber = (char *)malloc(ACCOUNTNUMBER);
@@ -561,6 +555,14 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         printf("系统错误，创建失败: %s\n", mysql_error(conn));
         exit(-1);
     }
+
+    if (!chatRoomOnlineTable(onlineHash, onlineTable))
+    {
+        printf("插入失败请重新插入\n");
+        exit(-1);
+    }
+
+    
 
     /* 查询登录人的所有好友，用以之后将其好友放入一个他专属的树中 */
     memset(buffer, 0, sizeof(buffer));
@@ -641,10 +643,10 @@ int convertToInt(const char *str)
 }
 
 /* 在线列表的插入 */
-int chatRoomOnlineTable(chatRoomMessage *Message, int sockfd, HashTable *onlineTable)
+int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 {
-    int name = convertToInt(Message->name);
-    if (!hashTableInsert(onlineTable, name, sockfd))
+    
+    if (!hashTableInsert(onlineTable, (int)*onlineHash->hashName, onlineHash->sockfd))
     {
         return -1;/*成功*/
     }
@@ -699,12 +701,12 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name)
 }
 
 /* 指定好友是否在线 */
-int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatRoomMessage *Message, int sockfd)
+int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatHash * onlineHash)
 {
     int ret = 1;
-    if(balanceBinarySearchTreeIsContainAppointVal(client, Message))
+    if(balanceBinarySearchTreeIsContainAppointVal(client, onlineHash->hashName))
     {
-        if(chatRoomOnlineTable(Message, sockfd, onlineTable) == 0)
+        if(chatRoomOnlineTable(onlineHash, onlineTable) == 0)
         {
             printf("在线");
         }
@@ -1126,4 +1128,69 @@ const char * resolveFriendName(char * buffer, chatContent * chat)
         return chat->friendName;
     }
     return NULL;
+}
+
+
+/*将json格式的字符串转换成原来onlineHash*/
+int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * hashNameObj = json_object_object_get(obj, "hashName");
+    if (hashNameObj != NULL) 
+    {
+        const char * hashName = json_object_get_string(hashNameObj);
+        strncpy(onlineHash->hashName, hashName, sizeof(onlineHash->hashName) - 1);
+        onlineHash->hashName[sizeof(onlineHash->hashName) - 1] = '\0';
+    }
+
+    struct json_object * sockfdObj = json_object_object_get(obj, "sockfd");
+    if (sockfdObj != NULL) 
+    {
+        int64_t sockfd = json_object_get_int64(sockfdObj);
+        
+    }
+
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
+    return 0;
+}
+
+
+/*将Message转换成json格式的字符串进行传送*/
+int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj) 
+{
+    
+    //  创建 json 对象并添加字段
+    if (json_object_object_add(obj, "hashName", json_object_new_string(onlineHash->hashName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for accountNumber\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "sockfd", json_object_new_int64(onlineHash->sockfd)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for password\n");
+        return -1;
+    }
+
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+
+    // 释放分配的内存
+    json_object_put(obj);
+    return 0;
 }

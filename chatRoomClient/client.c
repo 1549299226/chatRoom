@@ -86,6 +86,9 @@ int main()
     Friend *client = NULL;
     Friend * online = NULL;
     chatContent * friendMessage = NULL;
+    chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
+    onlineHash->hashName = (char *)malloc(NAMESIZE); 
+    onlineHash->sockfd = 0;
     chatRoomInit(&Message, &friendMessage, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
 
      
@@ -182,6 +185,26 @@ int main()
 
                 chatRoomClientLogIn(userBuf,Message, obj);
                 send(sockfd, userBuf, sizeof(userBuf), 0);
+
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                /*收到名字*/
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                /*将本人昵称写入在线列表中*/
+                strncpy(onlineHash->hashName, recvBuffer, NAMESIZE - 1);
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+                printf("%s\n", onlineHash->hashName);
+
+                
+                /*将句柄保存到onlineHash中*/
+                onlineHash->sockfd = sockfd;
+                char hashBuffer[BUFFER_SIZE];
+                memset(hashBuffer, 0, sizeof(hashBuffer));
+                printf("204---");
+                chatHashObjConvert(hashBuffer, onlineHash, obj);
+
+                send(sockfd, hashBuffer, sizeof(hashBuffer), 0);
 
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 if (!strncmp(recvBuffer, "登录成功", sizeof(recvBuffer) -1))
