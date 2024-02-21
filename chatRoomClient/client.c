@@ -225,7 +225,7 @@ int main()
             mainInterface();
             printf("请选择\n");
             scanf("%s", flag);
-            send(sockfd, flag, sizeof(flag), 0);
+            send(sockfd, flag, sizeof(flag), 0);//发送选择给服务端
             //添加好友
             if (!strncmp(flag, "1", sizeof(flag)))
             {      
@@ -332,12 +332,14 @@ int main()
                                 if (!strncmp(recvBuffer, "添加失败，插入此人失败，请重新查询", sizeof(recvBuffer)))
                                 {
                                     printf("%s\n", recvBuffer);
+                                    sleep(3);
                                     memset(flag, 0, sizeof(flag));
                                     continue;
                                 }
                                 else if (!strncmp(recvBuffer, "添加好友成功", sizeof(recvBuffer)))
                                 {
                                     printf("%s\n", recvBuffer);
+                                    sleep(3);
                                     break;
                                 }
                             }
@@ -366,14 +368,8 @@ int main()
                 
                 }
                 
-                
-                
-
-
                 continue;
-
-                
-                
+                               
             }
             
             /*聊天功能*/
@@ -381,12 +377,10 @@ int main()
             {
                 memset(flag, 0, sizeof(flag));
 
-
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 printf("%s\n", recvBuffer);
-                //查看好友 
+                
                 memset(recvBuffer, 0, sizeof(recvBuffer));
-                //send(sockfd, flag, sizeof(flag), 0);
 
                 
                 scanf("%s", flag);
@@ -404,28 +398,21 @@ int main()
                 /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
+
+
+#if 0
                     memset(flag, 0, sizeof(flag));
-
                     
-
-                    /*先清零*/
-                        
-                    printf("以下是所有好友的信息:\n");
-                    if (client == NULL)
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                    if (!strncmp(recvBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(recvBuffer)))
                     {
-                        memset(sendBuffer, 0, sizeof(sendBuffer));
-                        strncpy(sendBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(sendBuffer));
-                        send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
-                        memset(sendBuffer, 0, sizeof(sendBuffer));
-                        printf("您暂时没有好友无法聊天,返回上一级\n");
-                        sleep(3);
+                        printf("%s\n", recvBuffer);
+                        
                         continue;
                     }
-                    else
-                    {
-                        balanceBinarySearchTreeInOrderTravel(client); //这个应该写在服务器上在服务其中查询好友的列表
-                    }
-                    
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+
                     while (1)
                     {
                         printf("1、输入私聊对象的名字进行聊天\n");
@@ -439,15 +426,16 @@ int main()
                             scanf("%s", friendMessage->friendName);
                             /*先清零缓冲区*/
                             memset(sendBuffer, 0, sizeof(sendBuffer));
-                            if (friendIsExit(client, friendMessage, friendMessage->friendName) == 1) /*好友存在时*/
-                            {
+                            strncpy(sendBuffer, friendMessage->friendName, sizeof(sendBuffer));
+                            send(sockfd, sendBuffer, sizeof(sendBuffer), 0);//将好友名字发送给客户端
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
 #if 1
-                                chatRoomPrivateChat(friendMessage->friendName, sockfd, friendMessage, Message);
+                            chatRoomPrivateChat(friendMessage->friendName, sockfd, friendMessage, Message);
                                 
                                 
                                 /*清空缓冲区*/
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
-                                /*接收好友是否在线的信息*/
+                                    /*接收好友是否在线的信息*/
                                 ret = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                 if (ret == -1) 
                                 {
@@ -470,21 +458,16 @@ int main()
                                     if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
                                     {
                                         printf("好友在线\n");
-                                        
-                                        
+                                                                                
                                     }
-                                    // if (!strncmp(recvBuffer, "你没有好友 或者好友用户名不正确", sizeof(recvBuffer)))
-                                    // {
-                                    //     printf("你没有好友 或者好友用户名不正确, 返回上一级\n");
-                                    //     continue;
-                                    // }
+
                                     if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
                                     {
                                         printf("此时好友不在线, 设计为不通信，返回上一级\n");
                                         continue;
                                     }
                                 
-                                }
+                                
 #endif
                             }
 
@@ -506,7 +489,9 @@ int main()
                     }
 
                 }
-            }
+#endif
+                }
+
             else if (!strncmp(flag, "3", sizeof(flag)))
             {
                 //删除好友
