@@ -122,4 +122,11 @@ int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);
 /*将chatHash结构体转化成json字符串*/
 int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj);
 
+
+/*将好友信息转换成json类型的字符串*/
+int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/*将json格式的字符串转换成原来Message*/
+int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj);
+
 #endif
