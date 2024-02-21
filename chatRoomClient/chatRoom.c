@@ -1172,10 +1172,8 @@ int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * 
     scanf("%s", Message->accountNumber);
     printf("请输入密码\n");
     scanf("%s", Message->password);
-    // printf("请输入昵称\n");
-    // scanf("%s", Message->name);
-    // printf("请输入邮箱\n");
-    // scanf("%s", Message->mail);
+    
+    
 
     chatRoomObjConvert(buffer, Message, obj);
     /*将输入的字符转成json型的字符串*/
@@ -1311,4 +1309,78 @@ void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_ob
     json_object_put(obj);  // 释放 JSON 对象
     closeDatabase(conn);   // 关闭数据库连接
     free(node);            // 释放好友节点的内存
+}
+
+/*将json格式的字符串转换成原来onlineHash*/
+int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * hashNameObj = json_object_object_get(obj, "hashName");
+    if (hashNameObj != NULL) 
+    {
+        const char * hashName = json_object_get_string(hashNameObj);
+        strncpy(onlineHash->hashName, hashName, sizeof(onlineHash->hashName) - 1);
+        onlineHash->hashName[sizeof(onlineHash->hashName) - 1] = '\0';
+    }
+
+    struct json_object * sockfdObj = json_object_object_get(obj, "sockfd");
+    if (sockfdObj != NULL) 
+    {
+        int64_t sockfd = json_object_get_int64(sockfdObj);
+        
+    }
+
+    // 释放 json 对象的内存
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+    }
+    return 0;
+}
+
+
+/*将hash转换成json格式的字符串进行传送*/
+int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj) 
+{
+    
+
+    printf("1356 %s---%d\n", onlineHash->hashName, onlineHash->sockfd);
+    obj = json_object_new_object();
+    
+    if (!json_object_is_type(obj, json_type_object)) {
+        fprintf(stderr, "obj is not an object\n");
+        sleep(2);
+        return -1;
+    }
+    //  创建 json 对象并添加字段
+    if (json_object_object_add(obj, "hashName", json_object_new_string((const char *)onlineHash->hashName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for hashName\n");
+        return -1;
+    }
+
+    if (json_object_object_add(obj, "sockfd", json_object_new_int64(onlineHash->sockfd)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for sockfd\n");
+        return -1;
+    }
+    
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+    //printf("%s\n", buffer);
+    printf("1374 --%s\n", buffer);
+    // 释放分配的内存
+    json_object_put(obj);
+    return 0;
 }

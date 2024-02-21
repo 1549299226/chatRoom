@@ -50,6 +50,11 @@ enum STATUS_CODE
     INVALID_ACCESS,
 };
 
+typedef struct chatHash
+{
+    char * hashName;
+    int sockfd;
+}chatHash;
 
 int existenceOrNot(void *arg1, void *arg2);
 
@@ -111,5 +116,10 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
 /* 退出登录时的资源回收 */
 void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) ;
 
+/*将json字符串转化成chatHash结构体*/
+int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);
+
+/*将chatHash结构体转化成json字符串*/
+int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj);
 
 #endif

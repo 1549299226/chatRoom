@@ -106,7 +106,9 @@ void* handleClient(void* arg)
     Friend * online = NULL;
     HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
-    
+    chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
+    onlineHash->hashName = (char *)malloc(NAMESIZE); 
+    onlineHash->sockfd = 0;
     chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, printStruct, node, &onlineTable);
 
 
@@ -162,7 +164,43 @@ void* handleClient(void* arg)
                 
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                 chatRoomObjAnalyze(recvBuffer, Message, obj);
-                if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable))
+
+                char buffer[BUFFER_SIZE];
+                memset(buffer, 0, sizeof(buffer));
+                snprintf(buffer, sizeof(buffer), "SELECT name FROM chatRoom WHERE accountNumber = '%s'", Message->accountNumber);
+                if (mysql_query(conn, buffer))
+                {
+                    printf("查无此人\n");    
+                    exit(-1);
+                }
+                else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+                {
+                    MYSQL_RES *res = mysql_use_result(conn);
+                    memset(buffer, 0, sizeof(buffer));
+                    if (res != NULL) 
+                    {
+                        MYSQL_ROW row;
+                        if ((row = mysql_fetch_row(res)) != NULL) 
+                        {
+                            //snprintf(Friend.accountNumber, sizeof(Friend.accountNumber), "%s", row[0]);
+                            snprintf(buffer, sizeof(buffer), "%s", row[0]);
+
+                        }
+                        mysql_free_result(res);  // 释放查询结果集
+                    }
+                }
+                strncpy(sendBuffer, "句柄", sizeof(sendBuffer) - 1);
+                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                send(acceptfd, buffer, sizeof(buffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                recv(acceptfd,recvBuffer, sizeof(recvBuffer), 0);
+                chatHashObjAnalyze(recvBuffer, onlineHash, obj);
+                memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
+                
+                if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable, onlineHash))
                 {
                     
                     
@@ -536,6 +574,7 @@ void* handleClient(void* arg)
     return NULL;
 }
 
+
 int main()
 {   
     /*将Ctrl+z设置为退出程序*/
@@ -636,7 +675,7 @@ int main()
 
             // pthread_mutex_lock(&mutex_server);
             ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
-            //threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
+            // threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
             // pthread_mutex_unlock(&mutex_server); 
     }
 
