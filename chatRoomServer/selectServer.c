@@ -29,6 +29,7 @@
 void Off(int arg)
 {
     printf("服务端关闭。。。\n");
+    
     exit(-1);
 }
 
@@ -102,12 +103,13 @@ void * handle_group_chat(void * arg)
 
 }
 
+/*要传进哈希表和他的结构体*/
 void* handleClient(void* arg) 
 {
-    //pthread_detach(pthread_self());
-    int acceptfd = *((int*)arg);  // 获取acceptfd
+    // pthread_detach(pthread_self());
+    fdHash * hashHandle = (fdHash *)arg;  // 获取acceptfd
     pthread_t tid_groupchat;
-
+    int acceptfd = hashHandle->sockfd;
     chatRoomMessage *Message = NULL;
     json_object *obj;
     Friend *Info = NULL;
@@ -115,13 +117,12 @@ void* handleClient(void* arg)
     friendNode *node = NULL;
     Friend *client = NULL;
     Friend * online = NULL;
-    HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
     chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
     groupChat * groupChatInfo = NULL;
     onlineHash->hashName = (char *)malloc(NAMESIZE); 
     onlineHash->sockfd = 0;
-    chatRoomInit(&Message, &groupChatInfo,&friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo,&friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &hashHandle->onlineTable);
 
 
     char recvBuffer[BUFFER_SIZE];
@@ -174,6 +175,7 @@ void* handleClient(void* arg)
 
                 memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
                 
+                /*读出账号密码*/
                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                 chatRoomObjAnalyze(recvBuffer, Message, obj);
 
@@ -201,18 +203,24 @@ void* handleClient(void* arg)
                         mysql_free_result(res);  // 释放查询结果集
                     }
                 }
-                strncpy(sendBuffer, "句柄", sizeof(sendBuffer) - 1);
-                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                memset(sendBuffer, 0, sizeof(sendBuffer));
+                /*本人的哈希 */
+                onlineHash->hashName = buffer; 
+                strncpy(onlineHash->hashName, buffer, ACCOUNTNUMBER);
+                onlineHash->sockfd = acceptfd;
 
-                send(acceptfd, buffer, sizeof(buffer), 0);
-                memset(sendBuffer, 0, sizeof(sendBuffer));
+                // send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                // memset(sendBuffer, 0, sizeof(sendBuffer));
 
-                recv(acceptfd,recvBuffer, sizeof(recvBuffer), 0);
-                chatHashObjAnalyze(recvBuffer, onlineHash, obj);
+                // send(acceptfd, buffer, sizeof(buffer), 0);
+                // printf("214----%s\n", buffer);
+                
+                
+                // recv(acceptfd,recvBuffer, sizeof(recvBuffer), 0);
+                //printf("218----%s\n", recvBuffer);
+                //chatHashObjAnalyze(recvBuffer, onlineHash, obj);
                 memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
                 
-                if (!chatRoomLogIn(acceptfd, Message, client, conn, onlineTable, onlineHash))
+                if (!chatRoomLogIn(acceptfd, Message, client, conn, hashHandle->onlineTable, onlineHash))
                 {
                     
                     
@@ -582,7 +590,7 @@ void* handleClient(void* arg)
                     char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
 
                     /*判断好友是否在线 在线返回好友套接字fd */
-                    int ret = searchFriendIfOnline(onlineTable, friendName);
+                    int ret = searchFriendIfOnline(hashHandle->onlineTable, friendName);
 
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         if (ret > 0)   /*此时好友在线*/
@@ -620,8 +628,8 @@ void* handleClient(void* arg)
                 
                     memset(sendBuffer, 0, sizeof(sendBuffer));
 #if 1
-                int delete_name = convertToInt(Message->name);
-                hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
+                int delete_name = getAsciiSum(Message->name);
+                hashTableDelAppointKey(hashHandle->onlineTable, delete_name);/*删除在线列表中该用户的信息*/
                 printf("客户端退出\n");
 #endif
                     break;
@@ -658,7 +666,7 @@ void* handleClient(void* arg)
     // 原先的代码结束
 
     close(acceptfd);  // 处理结束后关闭acceptfd
-    //pthread_exit(NULL);
+    // pthread_exit(NULL);
     return NULL;
 }
 
@@ -691,14 +699,20 @@ int main()
 
     chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
 
-    threadpool_t *pool = NULL;
+    threadpool_t pool;
     int minThreads;
     int maxThreads;
     int queueCapacity;
     pthread_t tid;
     
-    // threadPoolInit(pool, minThreads, maxThreads, queueCapacity);
+    threadPoolInit(&pool, minThreads, maxThreads, queueCapacity);
 
+    fdHash * hashHandle = (fdHash *)malloc(sizeof(fdHash));
+    memset(hashHandle, 0, sizeof(fdHash));
+    hashHandle->onlineTable = (HashTable *)malloc(sizeof(HashTable));
+    memset(hashHandle->onlineTable, 0, sizeof(HashTable));
+
+    
     // pthread_mutex_t mutex_server;
     // pthread_mutex_init(&mutex_server, NULL);
     int enableopt = 1;
@@ -761,10 +775,11 @@ int main()
                 perror("accpet error");
                 break;
             }
-
+            hashHandle->onlineTable = onlineTable;
+            hashHandle->sockfd =acceptfd;
             // pthread_mutex_lock(&mutex_server);
-            //ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
-            threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
+            // ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
+            threadPoolAddTask(&pool, (void *)handleClient, (void *)hashHandle);
             // pthread_mutex_unlock(&mutex_server); 
     }
 

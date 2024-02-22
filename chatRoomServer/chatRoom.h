@@ -67,6 +67,12 @@ typedef struct chatHash
     int sockfd;
 }chatHash;
 
+typedef struct fdHash
+{
+    HashTable *onlineTable;
+    int sockfd;
+}fdHash;
+
 //哈希的比较函数
 int compareFunc(void *val1, void *val2);
 
@@ -134,8 +140,6 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
 
 /*解析json字符串的好友姓名*/
 const char * resolveFriendName(char * buffer, chatContent * chat);
-/*字符串转整型*/
-int convertToInt(const char *str);
 
 /*将json字符串转化成chatHash结构体*/
 int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);
@@ -152,4 +156,6 @@ int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj);
 /* 查看人员信息 */
 int chatRoomSelect(Friend *client,  ELEMENTTYPE data);
 
+/*字符串转整型*/
+int getAsciiSum(const char *name); 
 #endif

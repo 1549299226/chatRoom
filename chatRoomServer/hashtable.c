@@ -165,7 +165,7 @@ int hashTableDelAppointKey(HashTable *pHashtable, HASH_KEYTYPE key)
 }
 
 /* 哈希表 根据key获取value. */
-int hashTableGetAppointKeyValue(HashTable *pHashtable, int key, int *mapValue)
+int hashTableGetAppointKeyValue(HashTable *pHashtable, HASH_KEYTYPE key, HASH_VALUETYPE *mapValue)
 {
     int ret = 0;
     if (!key)
