@@ -20,8 +20,8 @@
 #define SERVER_PORT 9999
 #define MAX_LISTEN  128
 
-#define BUFFER_SIZE     128
-
+#define BUFFER_SIZE     1024
+#define BUFFER      1024
 #define ACCOUNTNUMBER 6
 #define NAMESIZE 12
 /* 用单进程/线程 实现并发 */
@@ -34,7 +34,7 @@ void Off(int arg)
 
 void * pthread_Fun(int *arg)
 {
-    pthread_detach(pthread_self()); 
+    // pthread_detach(pthread_self()); 
     int acceptfd = *arg;
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
@@ -90,7 +90,9 @@ int printStruct(void *arg1, void *arg2)
     printf("90 -- %s\n", info->name);
     
     json_object * obj = NULL;
+    
     printStructObj(buffer, info, obj);
+    
     printf("94 -- %s\n", buffer);
     return ret;
 }
@@ -102,7 +104,7 @@ void * handle_group_chat(void * arg)
 
 void* handleClient(void* arg) 
 {
-    pthread_detach(pthread_self());
+    //pthread_detach(pthread_self());
     int acceptfd = *((int*)arg);  // 获取acceptfd
     pthread_t tid_groupchat;
 
@@ -140,7 +142,6 @@ void* handleClient(void* arg)
                 printf("客户端%d关闭\n", acceptfd);
                 /*调用退出登录代码 to do*/
                 close(acceptfd);
-                break;
                 return NULL;
             }
             if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
@@ -305,13 +306,21 @@ void* handleClient(void* arg)
                         recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
                         friendMessage->accountNumber = recvBuffer;
                         snprintf(buffer, sizeof(buffer), "SELECT accountNumber , name FROM chatRoom WHERE accountNumber = '%s'", friendMessage->accountNumber);
-                        if (mysql_query(conn, buffer))
+                        if (mysql_query(conn, buffer) < 0)
                         {
                             strncpy(sendBuffer, "添加失败，查询此人失败,请重新查询", sizeof(sendBuffer));    
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer));
                             memset(friendMessage->accountNumber, 0, sizeof(friendMessage->accountNumber));
                             memset(friendMessage->name, 0, sizeof(friendMessage->name));
+                            continue;
+                        }
+                        else if (!mysql_query(conn, buffer))
+                        {
+                            strncpy(sendBuffer, "没有此人，请重新添加", sizeof(sendBuffer));    
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                            
                             continue;
                         }
                         else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
@@ -405,9 +414,17 @@ void* handleClient(void* arg)
                         memset(buffer, 0, sizeof(buffer));
                         friendMessage->name = recvBuffer;
                         snprintf(buffer, sizeof(buffer), "SELECT accountNumber , name FROM chatRoom WHERE name = '%s'", friendMessage->name);
-                        if (mysql_query(conn, buffer))
+                        if (mysql_query(conn, buffer) < 0)
                         {
                             strncpy(sendBuffer, "添加失败，查询此人失败,请重新查询", sizeof(sendBuffer));    
+                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                            
+                            continue;
+                        }
+                        else if (!mysql_query(conn, buffer))
+                        {
+                            strncpy(sendBuffer, "没有此人，请重新添加", sizeof(sendBuffer));    
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer));
                             
@@ -428,19 +445,19 @@ void* handleClient(void* arg)
                                 }
                                 mysql_free_result(res);  // 释放查询结果集
                             }
-                            printf("424----%s,%s\n", accountNumber, name);
+                            printf("399----%s,%s\n", accountNumber, name);
                             send(acceptfd, accountNumber, ACCOUNTNUMBER + 1, 0);
 
                                                 /*这里少东西还，*/
                             
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             recv(acceptfd, recvBuffer,sizeof(recvBuffer), 0);
-                            printf("431----%s\n", recvBuffer);
+                            printf("406----%s\n", recvBuffer);
                             if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                             {
                                 //创建好友表   有问题   好友表没有标记出来
                                 //插入到好友列表
-                                printf("436----%s,%s\n", accountNumber, name);
+                                printf("411----%s,%s\n", accountNumber, name);
                                     
                                 snprintf(buffer, sizeof(buffer), "INSERT INTO Friend%s(accountNumber ,name) VALUES ('%s', '%s')", Message->accountNumber, accountNumber, name);
                                 if (mysql_query(conn, buffer))
@@ -454,6 +471,7 @@ void* handleClient(void* arg)
                                     memset(accountNumber, 0, ACCOUNTNUMBER + 1);
                                     continue;
                                 }
+                                
 
                                 //添加好友到树中
                                 friendMessage->accountNumber = accountNumber;
@@ -648,7 +666,7 @@ void* handleClient(void* arg)
                                 chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
                                 node->name = (char *)malloc(NAMESIZE);
                                 strncpy(node->name, recvBuffer, NAMESIZE);
-                                printf("520---%s---name:%s--\n", recvBuffer,node->name);
+                                printf("670---%s---name:%s--\n", recvBuffer,node->name);
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 /*查找该人员昵称是否为你的好友*/
                                 if (!chatRoomSelect(client, node))
@@ -746,7 +764,7 @@ void* handleClient(void* arg)
     // 原先的代码结束
 
     close(acceptfd);  // 处理结束后关闭acceptfd
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
     return NULL;
 }
 
@@ -850,10 +868,10 @@ int main()
                 break;
             }
 
-            pthread_mutex_lock(&mutex_server);
+            // pthread_mutex_lock(&mutex_server);
             ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
-            // threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
-            pthread_mutex_unlock(&mutex_server); 
+            //threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
+            // pthread_mutex_unlock(&mutex_server); 
     }
 
 

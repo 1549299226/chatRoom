@@ -15,7 +15,7 @@
 #include <json-c/json_object.h>
 #include <json-c/json.h>
 
-#define BUFFER_SIZE 128
+#define BUFFER_SIZE 1024
 #define SERVER_PORT 9999
 #define SERVER_IP "127.0.0.1"
 
