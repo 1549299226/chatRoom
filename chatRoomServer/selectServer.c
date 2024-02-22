@@ -97,11 +97,16 @@ int printStruct(void *arg1, void *arg2)
     return ret;
 }
 
+void * handle_group_chat(void * arg)
+{
+
+}
 
 void* handleClient(void* arg) 
 {
     //pthread_detach(pthread_self());
     int acceptfd = *((int*)arg);  // 获取acceptfd
+    pthread_t tid_groupchat;
 
     chatRoomMessage *Message = NULL;
     json_object *obj;
@@ -113,9 +118,10 @@ void* handleClient(void* arg)
     HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
     chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
+    groupChat * groupChatInfo = NULL;
     onlineHash->hashName = (char *)malloc(NAMESIZE); 
     onlineHash->sockfd = 0;
-    chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo,&friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
 
 
     char recvBuffer[BUFFER_SIZE];
@@ -340,6 +346,7 @@ void* handleClient(void* arg)
                                 friendMessage->name = name;
                                 //插入到好友列表
                                 balanceBinarySearchTreeInsert(client, friendMessage);
+      
                                 strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
                                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                 memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -347,7 +354,7 @@ void* handleClient(void* arg)
                                 memset(friendMessage->name, 0, sizeof(friendMessage->name));
                                 memset(name, 0, NAMESIZE + 1);
                                 memset(accountNumber, 0, ACCOUNTNUMBER + 1);
-                                printf("添加成功");
+                                printf("添加成功\n");
                                 sleep(1);
                                 break;
                             }    
@@ -446,6 +453,8 @@ void* handleClient(void* arg)
                                 friendMessage->accountNumber = accountNumber;
                                 friendMessage->name = name;
                                 balanceBinarySearchTreeInsert(client, friendMessage);
+
+                            
                                 strncpy(sendBuffer, "添加好友成功", sizeof(sendBuffer));    
                                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                 memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -453,7 +462,7 @@ void* handleClient(void* arg)
                                 memset(friendMessage->name, 0, sizeof(friendMessage->name));
                                 memset(name, 0, NAMESIZE + 1);
                                 memset(accountNumber, 0, ACCOUNTNUMBER + 1);
-                                printf("添加成功");
+                                printf("添加成功\n");
                                 sleep(1);
                                 break;
                             }    
@@ -484,6 +493,8 @@ void* handleClient(void* arg)
 
             else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
             {
+                //聊天功能
+                memset(sendBuffer, 0, sizeof(sendBuffer));
                 strncpy(sendBuffer, "请选择1、群聊 2、私聊 ", sizeof(sendBuffer));
                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                 memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -501,6 +512,23 @@ void* handleClient(void* arg)
                     memset(sendBuffer, 0, sizeof(sendBuffer));                       
                     printf("群聊功能尚未完善，先返回上一级\n");
                     continue;
+
+                    memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                    strncpy(sendBuffer, "1、请输入群聊名进行聊天2、没有群聊,进群", sizeof(sendBuffer));     
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);                
+                    memset(sendBuffer, 0, sizeof(sendBuffer)); 
+
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
+                    {
+                        
+                    }
+
+
+
+                    //开一个线程处理群聊
+                    pthread_create(&tid_groupchat, NULL, handle_group_chat, NULL);
                     /*群聊 to do..*/
                 }
                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
@@ -577,35 +605,42 @@ void* handleClient(void* arg)
                         }
                     }
                 }   
-            else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
-            {
-                //删除好友
-            }
-            else if (!strncmp(recvBuffer, "0", sizeof(recvBuffer)))
-            {
-                
-            memset(sendBuffer, 0, sizeof(sendBuffer));
-            strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
-            printf("%s\n", sendBuffer);
+                else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
+                {
+                    //删除好友
+                }
+                else if (!strncmp(recvBuffer, "6", sizeof(recvBuffer)))
+                {
+                  
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    strncpy(sendBuffer, "用户退出登录", sizeof(sendBuffer));
+                    printf("%s\n", sendBuffer);
 
-            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-            
-            memset(sendBuffer, 0, sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
 #if 1
                 int delete_name = convertToInt(Message->name);
                 hashTableDelAppointKey(onlineTable, delete_name);/*删除在线列表中该用户的信息*/
                 printf("客户端退出\n");
 #endif
-                break;
-            }
-            else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
-            {
-                //注销登录
-            }
-            else
-            {
-                printf("输入有误，请重新选择\n");
-                continue;
+                    break;
+                }
+                else if (!strncmp(recvBuffer, "X", sizeof(recvBuffer)))
+                {
+                    //注销登录
+                }
+                else
+                {
+                    printf("输入有误，请重新选择\n");
+#if 0
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    strncpy(sendBuffer, "输入有误，请重新选择", sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    printf("%s\n", sendBuffer);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+#endif
+                    continue;
 
             
 
@@ -652,8 +687,9 @@ int main()
     Friend * online = NULL;
     HashTable *onlineTable = NULL;
     chatContent * friendMessage = NULL;
-    
-    chatRoomInit(&Message, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
+    groupChat * groupChatInfo = NULL;
+
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
 
     threadpool_t *pool = NULL;
     int minThreads;

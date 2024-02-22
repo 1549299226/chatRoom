@@ -858,6 +858,8 @@ int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chat
             else if(!strncmp(flag, "2", sizeof(flag)))
             {
                 /*发文件 to do..*/
+                printf("该功能尚未完善，返回上一级\n");
+                continue;
             }
             else if (!strncmp(flag, "3", sizeof(flag)))
             {
