@@ -597,7 +597,12 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         exit(-1);
     }
 
-    if (!chatRoomOnlineTable(onlineHash, onlineTable))
+    if (chatRoomOnlineTable(onlineHash, onlineTable) > 0)
+    {
+        printf("插入成功\n");
+        
+    }
+    else
     {
         printf("插入失败请重新插入\n");
         exit(-1);
@@ -703,35 +708,36 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 
 
 /*字符串转整型*/
-int convertToInt(const char *str) 
- {
-    char *endptr = NULL;
-    errno = 0;
-    long result = strtol(str, &endptr, 10);
-    if ((errno == ERANGE && (result == LONG_MAX || result == LONG_MIN)) || (errno != 0 && result == 0)) {
-        // 转换失败
-        return 0;
+int getAsciiSum(const char *name) 
+{
+    int sum = 0;
+
+    while (*name) 
+    {
+        sum += *name; // 获取当前字符的 ASCII 值并累加
+        name++;
     }
-    if (endptr == str) {
-        // 没有有效的数字
-        return 0;
-    }
-    if (result > INT_MAX || result < INT_MIN) {
-        // 超出int范围
-        return 0;
-    }
-    return (int) result;
+
+    return sum;
 }
 
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 {
-    
-    if (!hashTableInsert(onlineTable, (int)*onlineHash->hashName, onlineHash->sockfd))
+    int ret = getAsciiSum(onlineHash->hashName);
+    if (!ret)
     {
-        return -1;/*成功*/
+        printf("转换失败\n");
+        return -1;
     }
-    return 0;/*失败*/
+    
+    if (!hashTableInsert(onlineTable, ret, onlineHash->sockfd))
+    {
+        printf("哈希 ----ret:%d\n", ret);
+
+        return ret;/*成功*/
+    }
+    return -1;/*失败*/
 }
 
 
@@ -741,7 +747,7 @@ int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 int searchFriendIfOnline(HashTable * onlineTable, char * name)
 {
     int sockfd_onlineFriend = 0;
-    int hash_name = convertToInt(name);
+    int hash_name = getAsciiSum(name);
     if (onlineTable == NULL)
     {
         printf("无在线好友\n");
