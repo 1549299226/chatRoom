@@ -100,7 +100,7 @@ int printStruct(void *arg1, void *arg2)
 
 void* handleClient(void* arg) 
 {
-    pthread_detach(pthread_self());
+    //pthread_detach(pthread_self());
     int acceptfd = *((int*)arg);  // 获取acceptfd
 
     chatRoomMessage *Message = NULL;
@@ -623,7 +623,7 @@ void* handleClient(void* arg)
     // 原先的代码结束
 
     close(acceptfd);  // 处理结束后关闭acceptfd
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
     return NULL;
 }
 
@@ -727,8 +727,8 @@ int main()
             }
 
             // pthread_mutex_lock(&mutex_server);
-            ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
-            // threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
+            //ret = pthread_create(&tid, NULL, handleClient, (void *)&acceptfd);
+            threadPoolAddTask(pool, (void *)handleClient, (void *)&acceptfd);
             // pthread_mutex_unlock(&mutex_server); 
     }
 
