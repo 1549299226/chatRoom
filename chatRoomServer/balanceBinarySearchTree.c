@@ -3,7 +3,9 @@
 #include <string.h>
 #include "doubleLinkListQueue.h"
 #include <math.h>
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
 /* 状态码 */
 enum STATUS_CODE
 {
@@ -15,7 +17,7 @@ enum STATUS_CODE
 
 #define true    1
 #define false   0
-
+#define NAMESIZE 12
 /* 静态函数前置声明 */
 
 /* 两个值比较大小 */
@@ -33,7 +35,7 @@ static int balanceBinarySearchTreeNodeIsLeaf(AVLTreeNode *node);
 /* 前序遍历 */
 static int preOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
 /* 中序遍历 */
-static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
+static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer, int *count);
 /* 后序遍历 */
 static int postOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer);
 /* 获取当前结点的前驱结点 */
@@ -528,6 +530,7 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
         /* 更新树的结点 */
         (pBstree->size)++;
         insertNodeAfter(pBstree, pBstree->root);
+        printf("yuchun\n");
         return ret;
     }
 
@@ -543,18 +546,21 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
     {
         /* 标记父结点 */
         parentNode = travelNode;
-        cmp = pBstree->compareFunc(val, travelNode->data);
+        cmp = pBstree->compareFunc1(val, travelNode->data);
         /* 插入元素 < 遍历到的结点 */
         if (cmp < 0)
         {
+            printf("L>>>>>\n");
             travelNode = travelNode->left;
         }
         else if (cmp > 0)     /* 插入元素 > 遍历到的结点 */
         {
+            printf("R>>>>>>\n");
             travelNode = travelNode->right;
         }
         else
         {
+            printf("over-----\n");
             /* 插入元素 = 遍历到的结点 */
             return ret;
         }
@@ -584,10 +590,12 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
     /* 挂在左子树 */
     if (cmp < 0)
     {
+        printf("L+++++\n");
         parentNode->left = newAVLNode;
     }
     else
     {   
+        printf("L-----\n");
         /* 挂在右子树 */
         parentNode->right = newAVLNode;
     }
@@ -599,6 +607,7 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
     newAVLNode->parent = parentNode;
 #endif
 
+    printf("插入--%p\n", pBstree->root->data);
     /* 更新树的结点 */
     (pBstree->size)++;
     return ret;
@@ -638,26 +647,27 @@ int balanceBinarySearchTreePreOrderTravel(BalanceBinarySearchTree *pBstree, char
 
 /* 中序遍历 */
 /* 左子树 根结点 右子树 */
-static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer)
+static int inOrderTravel(BalanceBinarySearchTree *pBstree, AVLTreeNode *node, char * buffer, int *count)
 {
-    int ret = 0;
-    if (node == NULL)
+     if (node == NULL)
     {
-        return ret;
+        return *count;
     }
-    /* 左子树 */
-    inOrderTravel(pBstree, node->left, buffer);
-    /* 根结点 */
-    pBstree->printFunc(node->data, buffer);
-    /* 右子树 */
-    inOrderTravel(pBstree, node->right, buffer);
+
+    *count = inOrderTravel(pBstree, node->left, buffer, count);
+    pBstree->printFunc(node->data, buffer + *count);
+    *count += strlen(buffer + *count);
+    inOrderTravel(pBstree, node->right, buffer, count);
+
+    return *count;
 }
 
 /* 二叉搜索树的中序遍历 */
 int balanceBinarySearchTreeInOrderTravel(BalanceBinarySearchTree *pBstree, char * buffer)
 {
     int ret = 0;
-    inOrderTravel(pBstree, pBstree->root, buffer);
+    int count = 0;
+    inOrderTravel(pBstree, pBstree->root, buffer, &count);
     return ret;
 }
 

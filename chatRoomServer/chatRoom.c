@@ -57,8 +57,9 @@ int compareFunc1(void *val1, void *val2)
 {
     chatRoomMessage *node1 = (chatRoomMessage *)val1;
     chatRoomMessage *node2 = (chatRoomMessage *)val2;
-
-    int ret = strncmp(node1->name, node2->name, sizeof(NAMESIZE));
+    printf("node1->name = %s\n", node1->name);
+    printf("node2->name = %s\n", node2->name);
+    int ret = strncmp(node1->name, node2->name, NAMESIZE);
     return ret;
 }
 
@@ -609,11 +610,26 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
     snprintf(buffer, sizeof(buffer), "SELECT * FROM `Friend%s`", Message->accountNumber);
 
     ret = mysql_query(conn, buffer);
-
+    
     if (ret == 0) 
     {
         MYSQL_RES* result = mysql_store_result(conn);
         int num_rows = mysql_num_rows(result);
+        printf("588 --num_rows:%d\n", num_rows);
+        char accountNumber[num_rows][ACCOUNTNUMBER];
+        for (int idx = 0; idx < num_rows; idx++)
+        {
+            memset(accountNumber[idx], 0, ACCOUNTNUMBER);
+        }
+        
+        
+        char name[num_rows][NAMESIZE];
+        for (int idx = 0; idx < num_rows; idx++)
+        {
+            memset(name, 0, NAMESIZE);
+        }
+        
+        
         if (num_rows == 0) 
         {
             printf("你没有朋友，是个孤独的人！！\n");
@@ -622,21 +638,46 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
         {
             // 获取查询结果集
             MYSQL_ROW row;
+            /*获取结果的个数*/
             // 遍历结果集
-            if ((row = mysql_fetch_row(result)) != NULL) 
+            while ((row = mysql_fetch_row(result)) != NULL) 
             {
+                chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                memset(node, 0, sizeof(chatRoomMessage));
+                node->accountNumber = (char *)malloc(ACCOUNTNUMBER);
+                memset(node->accountNumber, 0, ACCOUNTNUMBER);
+                node->name = (char *)malloc(NAMESIZE);
+                memset(node->name, 0, NAMESIZE);
                 // 以字符串形式打印每个字段的值
                 
-                    if ((row = mysql_fetch_row(result)) != NULL) 
-                    {
-                        printf("575 ---- %s\n", row[0]);
-                        snprintf(friendMessage->accountNumber, ACCOUNTNUMBER + 1, "%s", row[0]);
-                        snprintf(friendMessage->name, NAMESIZE + 1, "%s", row[1]);
-                        printf("%s ", row[1]);
+                    // if ((row = mysql_fetch_row(result)) != NULL) 
+                    // {
+                        printf("575 ---- row[0]:%s\n", row[0]);
+                        printf("row[1] :%s ", row[1]);
+                       
+                            // snprintf(accountNumber[idx], ACCOUNTNUMBER, "%s", row[0]);
+                            // snprintf(name[idx], NAMESIZE, "%s", row[1]);
+                            
+                            strncpy(node->accountNumber, row[0], ACCOUNTNUMBER);
+                            strncpy(node->name, row[1], NAMESIZE);
+                            printf("627 ---- %s\n", node->accountNumber);
+                            printf("628 ---- %s\n", node->name);
+
+                            balanceBinarySearchTreeInsert(client, node);
+                            printf("631 size- %d\n", client->size);
+                            
+                            // memset(accountNumber, 0, sizeof(ACCOUNTNUMBER));
+                            // memset(name, 0, sizeof(NAMESIZE));
+                        // }
                         
                         
-                    }
-                    balanceBinarySearchTreeInsert(client, friendMessage);
+                        
+                        
+                        
+                        
+                    // }
+                    
+                    
             }
         }
         // 释放查询结果集
@@ -664,7 +705,7 @@ int chatRoomAppend(chatRoomMessage *Message, json_object *obj, MYSQL * conn, Fri
 /*字符串转整型*/
 int convertToInt(const char *str) 
  {
-    char *endptr;
+    char *endptr = NULL;
     errno = 0;
     long result = strtol(str, &endptr, 10);
     if ((errno == ERANGE && (result == LONG_MAX || result == LONG_MIN)) || (errno != 0 && result == 0)) {
@@ -1256,8 +1297,8 @@ int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj)
 
 
     // 将 json 对象转换为字符串，并拷贝到 buffer 中
-    const char * json_str = json_object_to_json_string(obj);
-    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    strcat(buffer, json_object_to_json_string(obj));
+    strcat(buffer, "\n");
     buffer[BUFFER_SIZE - 1] = '\0';
 
     // 释放分配的内存
@@ -1286,8 +1327,9 @@ int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj)
 
     // 将 json 对象转换为字符串，并拷贝到 buffer 中
     const char * json_str = json_object_to_json_string(obj);
-    strncpy(buffer, json_str, BUFFER_SIZE - 1);
-    buffer[BUFFER_SIZE - 1] = '\0';
+    printf("1290 --- buffer = %s\n", buffer);
+    strcat(buffer, json_object_to_json_string(obj));
+    strcat(buffer, "\n");
 
     // 释放分配的内存
     json_object_put(obj);
