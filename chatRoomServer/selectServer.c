@@ -557,8 +557,38 @@ void* handleClient(void* arg)
                     {
                         while (1)
                         {
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                            char  str_groupNameTra[BUFFER_SIZE];
+                            ret = travelGroupChatName(conn, Message, str_groupNameTra);
+                            /*查询出错*/
+                            if (ret == -1)
+                            {
+                                strncpy(sendBuffer, "查询出错", sizeof(sendBuffer));
+                                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                printf("%s\n", sendBuffer);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                            }
+                            /*结果为空*/
+                            else if (ret == 0)
+                            {
+                                strncpy(sendBuffer,"还没有群聊", sizeof(sendBuffer));
+                                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                printf("%s\n", sendBuffer);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                            }
+                            /*结果不为空*/
+                            if (ret == 1)
+                            {
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                strncpy(sendBuffer, str_groupNameTra, sizeof(sendBuffer));
+                                send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                printf("%s\n", sendBuffer);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                            }
+
+
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                            strncpy(sendBuffer, "1、请输入群聊名进行聊天2、没有群聊,建群3、返回上一级", sizeof(sendBuffer));     
+                            strncpy(sendBuffer, "1、以上为群聊信息,请输入群聊名进行聊天2、建群3、返回上一级", sizeof(sendBuffer));     
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);                
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
 
@@ -574,6 +604,7 @@ void* handleClient(void* arg)
 
                             if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
                             {
+                                
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 continue;
                             }                    
@@ -604,10 +635,10 @@ void* handleClient(void* arg)
 
                                 while (1)
                                 {
-
+                                    
 
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
-                                    strncpy(sendBuffer, "请选择1、填写群名2、输入好友账号加入群聊3、退出返回上一级", sizeof(sendBuffer));
+                                    strncpy(sendBuffer, "请选择1、步骤一填写群名2、退出返回上一级", sizeof(sendBuffer));
                                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
 
@@ -625,13 +656,49 @@ void* handleClient(void* arg)
                                     {
                                         memset(recvBuffer, 0, sizeof(recvBuffer));
                                         recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                        /*创建群名 成功返回1 失败返回0*/
+                                        ret = createGroupName(recvBuffer, conn, Message);
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        /*创建群名成功*/
+                                        if (ret == 1)
+                                        {
+                                            char group_buffer[BUFFER_SIZE];
+                                            memset(group_buffer, 0, sizeof(group_buffer));
+
+                                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                                            strncpy(sendBuffer, "创建群名成功", sizeof(sendBuffer));
+                                            
+                                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                            printf("%s\n", sendBuffer);
+                                            
+                                            memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                                            /*输入好友账号拉取群聊*/
+                                            
+                                            
+                                            memset(recvBuffer, 0, sizeof(recvBuffer));
+                                            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                            
+                                                //this
+                                            
+
+                                            break;
+
+                                        }
+                                        /*失败*/
+                                        else if (ret == 0)
+                                        {
+                                            printf("651----\n");
+                                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                                            strncpy(sendBuffer, "创建群名失败", sizeof(sendBuffer));
+                                            send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                            printf("%s", sendBuffer);
+                                            memset(sendBuffer, 0, sizeof(sendBuffer));
+                                            continue;
+                                        }
 
                                     }
-                                    /*输入好友账号加入群聊*/
-                                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
-                                    {
-                                        memset(recvBuffer, 0, sizeof(recvBuffer));
-                                    }
+
                                     /*退出返回上一级*/
                                     else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
                                     {
