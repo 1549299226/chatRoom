@@ -86,10 +86,12 @@ int main()
     Friend *client = NULL;
     Friend * online = NULL;
     chatContent * friendMessage = NULL;
+    groupChat * groupChatInfo = NULL;
+
     chatHash * onlineHash = (chatHash *)malloc(sizeof(chatHash));
     onlineHash->hashName = (char *)malloc(NAMESIZE); 
     onlineHash->sockfd = 0;
-    chatRoomInit(&Message, &friendMessage, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, Info, client, online, &conn, existenceOrNot, printStruct, node); /*初始化*/
 
      
     
@@ -445,10 +447,12 @@ int main()
                             /*建群*/
                             else if (!strncmp(flag, "2", sizeof(flag)))
                             {
+
                                 char tmp_friendinfo[BUFFER_SIZE];
                                 memset(tmp_friendinfo, 0, sizeof(tmp_friendinfo));
 
                                 memset(flag, 0, sizeof(flag));
+
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                 if (!strncmp(recvBuffer, "您暂时没有好友无法建群,返回上一级", sizeof(recvBuffer)))
@@ -459,19 +463,60 @@ int main()
                                 }
                                 else
                                 {
-                                    while (1)
+                                    printf("以下是所有好友的信息:\n");
+                                    /*拷贝好友信息备用*/
+                                    memcpy(tmp_friendinfo, recvBuffer, sizeof(tmp_friendinfo));
+                                    printf("%s\n", recvBuffer);
+                                }
+                                while (1)
+                                {
+                                    system("clear");
+                                    printf("以下是所有好友的信息:\n");
+                                    printf("%s\n", tmp_friendinfo);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    /*请选择1、填写群名2、输入好友账号加入群聊3、退出返回上一级*/
+                                    printf("%s\n", recvBuffer);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    /*输入选项*/
+                                    scanf("%s", flag);
+
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    send(sockfd, flag, sizeof(sendBuffer), 0);
+                                    /*填写群名*/
+                                    if (!strncmp(flag, "1", sizeof(flag)))
                                     {
-                                        system("clear");
-                                        printf("以下是所有好友的信息:\n");
-                                        /*拷贝好友信息备用*/
-                                        memcpy(tmp_friendinfo, recvBuffer, sizeof(tmp_friendinfo));
-                                        printf("%s\n", recvBuffer);
-                                        sleep(3);
-                                        memset(recvBuffer, 0, sizeof(recvBuffer));
-                                        break;
+                                        memset(flag, 0, sizeof(flag));
+                                        printf("请输入群名\n");
+                                        scanf("%s", groupChatInfo->groupChatName);
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+ 
+
 
                                     }
+                                    /*输入好友账号加入群聊*/
+                                    else if (!strncmp(flag, "2", sizeof(flag)))
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+
+                                    }
+                                    /*退出返回上一级*/
+                                    else if (!strncmp(flag, "3", sizeof(flag)))
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+                                        printf("输入有误，重新输入\n");
+                                        continue;
+                                    }
+
+                                    
                                 }
+                                
 
                                 
                             }

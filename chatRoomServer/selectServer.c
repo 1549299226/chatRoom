@@ -587,15 +587,58 @@ void* handleClient(void* arg)
                                 }
                                 else
                                 {
-                                    while (1)
-                                    {
+ 
+                                     /*有好友将好友的信息发给该客户*/
+                                    balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
+                                    send(acceptfd, buffer, sizeof(buffer), 0);
+                                   
+                                }
 
-                                        /*有好友将好友的信息发给该客户*/
-                                        balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
-                                        send(acceptfd, buffer, sizeof(buffer), 0);
+                                while (1)
+                                {
+
+
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    strncpy(sendBuffer, "请选择1、填写群名2、输入好友账号加入群聊3、退出返回上一级", sizeof(sendBuffer));
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    if (ret == 0)
+                                    {
+                                        printf("客户端%d关闭\n", acceptfd);
+                                        /*调用退出登录代码 to do*/
+                                        close(acceptfd);
+                                        return NULL;
+                                    }
+                                    /*填写群名*/
+                                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+
+                                    }
+                                    /*输入好友账号加入群聊*/
+                                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    }
+                                    /*退出返回上一级*/
+                                    else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
                                         break;
                                     }
+                                    else
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        printf("输入有误，重新输入\n");
+                                        continue;
+                                    }
                                     
+
+                                  
                                 }
                    
                             }
@@ -652,7 +695,6 @@ void* handleClient(void* arg)
                             printf("客户端%d关闭\n", acceptfd);
                             /*调用退出登录代码 to do*/
                             close(acceptfd);
-                            break;
                             return NULL;
                         }
                         while (1)
