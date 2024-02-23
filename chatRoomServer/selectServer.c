@@ -636,8 +636,9 @@ void* handleClient(void* arg)
 
                             /*自己的名字*/
                             send(acceptfd, buffer, sizeof(buffer), 0);
+                            printf("buffer:%s\n",buffer);
                             /*设置sock为非阻塞状态使读写非阻塞*/   
-                           fcntl(acceptfd, F_SETFL, O_NONBLOCK);
+                        //    fcntl(acceptfd, F_SETFL, O_NONBLOCK);
                             
                             // fcntl(ret, F_SETFL, O_NONBLOCK);
                             memset(buffer, 0, sizeof(buffer));
@@ -646,11 +647,29 @@ void* handleClient(void* arg)
                             {   
                                 memset(buffer, 0, sizeof(buffer));
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
-                                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                                send(ret, recvBuffer, sizeof(recvBuffer), 0);
+                                printf("recvbuffer:%s",recvBuffer);
+                                if (recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0) > 0)
+                                {
+                                    printf("652--读:%s",recvBuffer);
+                                    if (send(ret, recvBuffer, sizeof(recvBuffer), 0) == -1)
+                                    {
+                                        break;
+                                    }
+                                    
+                                }
                                 
-                                recv(ret, buffer, sizeof(buffer), 0);
-                                send(acceptfd, buffer, sizeof(buffer), 0);
+                                printf("660 recvbuffer:%s",recvBuffer);
+                                
+                                if (recv(ret, buffer, sizeof(buffer), 0))
+                                {
+                                    printf("663--读:%s",buffer);
+
+                                    if (send(acceptfd, buffer, sizeof(buffer), 0) == -1)
+                                    {
+                                        break;
+                                    }
+                                }
+                                
                                 
                                 
                                  

@@ -65,15 +65,6 @@ int printStruct(void *arg)
     return ret;
 }
 
-void recvTask(void *arg)
-{
-    
-}
-
-void sendTask(void *arg)
-{
-
-}
 
 int main()
 {
@@ -500,7 +491,7 @@ int main()
                                     closedChat->chatTime = 0;
                                     closedChat->myName = 0;
                                     
-                                      /*设置sock为非阻塞状态使读写非阻塞*/
+                                    
                                     
                                     char buffer[BUFFER_SIZE];
                                     memset(buffer, 0, sizeof(buffer));
@@ -518,23 +509,31 @@ int main()
                                             printf("聊天结构体转json失败\n");
                                             break;
                                         }
-                                        send(sockfd, buffer, sizeof(buffer), 0);
+                                        if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
+                                        {
+                                            perror("send");
+                                            break;
+                                    
+                                        }
+                                        printf("buffer:%s\n",buffer);
 
                                         memset(closedChat->friendName, 0, NAMESIZE);
                                         closedChat->chatTime = 0;
                                         memset(closedChat->content, 0, BUFFER_SIZE);
 
-                                        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) > 0)
+                                        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
                                         {
-                                            if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
-                                            {
-                                                printf("json转聊天结构体失败\n");
-                                                break;
-                                                printf("%s, %ld\n %s\n", closedChat->myName, closedChat->chatTime, closedChat->content);
-                                            }
+                                            perror("recv");
+                                            break;
                                         }
+                                        if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
+                                        {
+                                            printf("json转聊天结构体失败\n");
+                                            break;
+                                        }
+                                        printf("533--读:%s\n",recvBuffer);
                                         
-                                        
+                                        printf("friendname:%s, time:%ld \n %s\n", closedChat->myName, closedChat->chatTime, closedChat->content);
                                         
 
                                     }
