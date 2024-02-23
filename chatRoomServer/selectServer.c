@@ -124,7 +124,7 @@ void* handleClient(void* arg)
     onlineHash->sockfd = 0;
     chatRoomInit(&Message, &groupChatInfo,&friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &hashHandle->onlineTable);
 
-
+    printf("127---fd:%d", acceptfd);
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
     

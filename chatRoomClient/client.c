@@ -436,18 +436,7 @@ int main()
                     else
                     {
                         printf("以下是所有好友的信息:\n");
-                        
-                        
-                        
-                        
                         printf("%s\n", recvBuffer);
-                            
-                            
-                            
-                        
-        
-                        
-                        
                     }
                     
 
@@ -515,6 +504,13 @@ int main()
                                 
 #endif
                             }
+                            else
+                            {
+                                printf("他不是你的好友， 返回上一级\n");
+                                continue;
+
+                            }
+                            
 
                         }
                         else if (!strncmp(flag, "2", sizeof(flag)))
