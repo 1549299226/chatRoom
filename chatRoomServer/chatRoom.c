@@ -746,7 +746,6 @@ int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 /*输入好友名字 判断好友是否在线*/
 int searchFriendIfOnline(HashTable * onlineTable, char * name)
 {
-    int sockfd_onlineFriend = 0;
     int hash_name = getAsciiSum(name);
     if (onlineTable == NULL)
     {
@@ -758,12 +757,8 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name)
         printf("好友名输入错误\n");
         return 0;
     }
-    int *mapVal = (int *)malloc(sizeof(int));
-    if (mapVal == NULL)
-    {
-        printf("内存分配失败\n");
-        return -1;
-    }
+    int mapVal = 0;
+    
 #if 0
     HashTable *pHashtable = (HashTable *) malloc(sizeof(HashTable));
     if (pHashtable == NULL) 
@@ -776,14 +771,11 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name)
     pHashtable->slotNums = SLOTNUMS_MAX;
     pHashtable->compareFunc = compareFunc;
 #endif
-    if (! hashTableGetAppointKeyValue(onlineTable, hash_name, mapVal))   /*找到在线好友的句柄*/ 
+    if (! hashTableGetAppointKeyValue(onlineTable, hash_name, &mapVal))   /*找到在线好友的句柄*/ 
     {
-        sockfd_onlineFriend = *mapVal;
-        free(mapVal);
-        return sockfd_onlineFriend;
+        return mapVal;
     } 
-    free(mapVal); // 释放 mapVal 的内存
-    // free(pHashtable);
+     
     return -2;
 }
 
