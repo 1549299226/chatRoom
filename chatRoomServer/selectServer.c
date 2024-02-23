@@ -15,7 +15,7 @@
 #include "threadpool.h"
 #include "hashtable.h"
 #include <json-c/json_object.h>
-
+#include <fcntl.h>
 
 #define SERVER_PORT 9999
 #define MAX_LISTEN  128
@@ -574,24 +574,24 @@ void* handleClient(void* arg)
                         node->name = (char *)malloc(NAMESIZE);
                         strncpy(node->name, recvBuffer, NAMESIZE);
                         printf("540---%s---name:%s--\n", recvBuffer,node->name);
-                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        
                         /*查找该人员昵称是否为你的好友*/
                         if (!chatRoomSelect(client, node))
                         {
                             strncpy(sendBuffer, "他是你的好友", sizeof(recvBuffer));
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                            /*可以开始聊天了*/
-
-                            /*to do...*/
+                          
                         }
                     }
                     
-
-                    char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
-
+                    printf("587---recvBuffer:%s\n", recvBuffer);
+                    char friendName[NAMESIZE];
+                    memset(friendName, 0, NAMESIZE);
+                    strncpy(friendName, recvBuffer, NAMESIZE);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
                     /*判断好友是否在线 在线返回好友套接字fd */
                     int ret = searchFriendIfOnline(hashHandle->onlineTable, friendName);
-
+                        printf("594--ret:%d\n", ret);
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         if (ret > 0)   /*此时好友在线*/
                         {
@@ -599,7 +599,63 @@ void* handleClient(void* arg)
                             strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                           
+                            memset(buffer, 0, sizeof(buffer));
+                            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                            printf("605----recvBuffer:%s\n", recvBuffer);
+                            char myAccountNumber[NAMESIZE];
+                            memset(myAccountNumber, 0, ACCOUNTNUMBER);
+                            strncpy(myAccountNumber, recvBuffer, ACCOUNTNUMBER);
+                            printf("609----myAccountNumber:%s\n", myAccountNumber);
+
+                            snprintf(buffer, sizeof(buffer), "SELECT name from chatRoom WHERE accountNumber = '%s'", myAccountNumber);
+                            if (mysql_query(conn, buffer))
+                            {
+                                printf("数据库错误\n");    
+                                exit(-1);
+                            }
+                            else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+                            {
+                                MYSQL_RES *res = mysql_use_result(conn);
+                                memset(buffer, 0, sizeof(buffer));
+                                if (res != NULL) 
+                                {
+                                    MYSQL_ROW row;
+                                    if ((row = mysql_fetch_row(res)) != NULL) 
+                                    {
+                                        
+                                        snprintf(buffer, sizeof(buffer), "%s", row[0]);
+                                        printf("628----buffer:%s\n", buffer);
+
+
+                                    }
+                                    mysql_free_result(res);  // 释放查询结果集
+                                }
+                            }
+                            printf("635----buffer:%s\n", buffer);
+
+                            /*自己的名字*/
+                            send(acceptfd, buffer, sizeof(buffer), 0);
+                            /*设置sock为非阻塞状态使读写非阻塞*/   
+                           fcntl(acceptfd, F_SETFL, O_NONBLOCK);
+                            
+                            // fcntl(ret, F_SETFL, O_NONBLOCK);
+                            memset(buffer, 0, sizeof(buffer));
                             /*发送消息给好友*/
+                            while (1)
+                            {   
+                                memset(buffer, 0, sizeof(buffer));
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                send(ret, recvBuffer, sizeof(recvBuffer), 0);
+                                
+                                recv(ret, buffer, sizeof(buffer), 0);
+                                send(acceptfd, buffer, sizeof(buffer), 0);
+                                
+                                
+                                 
+                            }
+                            
                             
                             
                         }
@@ -697,7 +753,7 @@ int main()
     chatContent * friendMessage = NULL;
     groupChat * groupChatInfo = NULL;
 
-    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, compareFunc, compareFunc1, printStruct, node, &onlineTable);
 
     threadpool_t pool;
     int minThreads;
