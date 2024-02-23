@@ -364,11 +364,13 @@ int threadPoolInit(threadpool_t *pool, int minThreads, int maxThreads, int queue
 /* 线程池添加任务 */
 int threadPoolAddTask(threadpool_t *pool, void *(worker_hander)(void *), void *arg)
 {
+    printf("====================================\n");
     if (pool == NULL)
     {
+        printf("-------------------------\n");
         return NULL_PTR;
     }
-
+    printf("====================================\n");
     /* 加锁 */
     pthread_mutex_lock(&(pool->mutexpool));
     /* 任务队列满了 */
@@ -391,7 +393,7 @@ int threadPoolAddTask(threadpool_t *pool, void *(worker_hander)(void *), void *a
     pool->queueRear = (pool->queueRear + 1) % pool->queueCapacity;
     /* 任务数加一. */
     pool->queueSize++;
-
+    printf("add_Task\n");
     pthread_mutex_unlock(&(pool->mutexpool));
     /* 发信号 */
     pthread_cond_signal(&(pool->notEmpty));
