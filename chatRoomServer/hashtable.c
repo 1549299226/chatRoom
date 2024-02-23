@@ -177,15 +177,17 @@ int hashTableGetAppointKeyValue(HashTable *pHashtable, HASH_KEYTYPE key, HASH_VA
     /* 将外部传过来的key 转化为我哈希表对应的slotId */
     int KeyId = 0;
     calHashValue(pHashtable, key, &KeyId);
-
+    printf("180 --key:%d\n", key);
     hashNode tmpNode;
     tmpNode.real_key = key;
     DoubleLinkNode * resNode = DoubleLinkListAppointKeyValGetNode((pHashtable->slotKeyId[KeyId]), &tmpNode,  pHashtable->compareFunc);
+    
+    printf("184 --key:%d\n", KeyId);
     if (resNode == NULL)
     {
         return -1;
     }
-
+    
     hashNode * mapNode = (hashNode*)resNode->data;
     if (mapValue)
     {

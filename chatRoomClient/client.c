@@ -14,6 +14,7 @@
 #include "chatRoom.h"
 #include <json-c/json_object.h>
 #include <json-c/json.h>
+#include <fcntl.h>
 
 #define BUFFER_SIZE 1024
 #define SERVER_PORT 9999
@@ -64,7 +65,15 @@ int printStruct(void *arg)
     return ret;
 }
 
+void recvTask(void *arg)
+{
+    
+}
 
+void sendTask(void *arg)
+{
+
+}
 
 int main()
 {
@@ -463,43 +472,81 @@ int main()
                             if (!strncmp(recvBuffer, "他是你的好友", sizeof(recvBuffer))) /*好友存在时*/
                             {
 #if 1 
-                                /*可以开始聊天了*/
-                                chatRoomPrivateChat(friendMessage->friendName, sockfd, friendMessage, Message);
-                                
-                                
                                 /*清空缓冲区*/
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                     /*接收好友是否在线的信息*/
-                                ret = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                                if (ret == -1) 
+                                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                
+                                
+                                    // 接收到数据成功
+                                //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
+                                if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
                                 {
-                                        perror("recv error");  // 打印错误信息
-                                        printf("接收错误，返回上一级\n");
-                                        continue;
-                                        // 处理接收错误的情况
-                                } 
-                                else if (ret == 0) 
-                                {
-                                    printf("Connection closed by peer\n");  // 连接被关闭
-                                        // 处理连接关闭的情况
-                                    printf("连接关闭错误，返回上一级\n");
-                                    continue;
-                                } 
-                                else 
-                                {
-                                        // 接收到数据成功
-                                    //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
-                                    if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
-                                    {
-                                        printf("好友在线\n");
-                                                                                
-                                    }
+                                    printf("%s\n",recvBuffer);
 
-                                    if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
+                                    send(sockfd, Message->accountNumber , ACCOUNTNUMBER, 0);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    strncpy(friendMessage->myName, recvBuffer, NAMESIZE); 
+                                    printf("482----friendMessage->myName:%s\n", friendMessage->myName);
+                                    printf("482----recvBuffer:%s\n", recvBuffer);
+                                    
+                                    chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
+                                    memset(closedChat, 0, sizeof(chatContent));
+                                    closedChat->content = (char *)malloc(BUFFER_SIZE);
+                                    memset(closedChat->content, 0, BUFFER_SIZE);
+                                    closedChat->friendName = (char *)malloc(NAMESIZE);
+                                    memset(closedChat->friendName, 0, NAMESIZE);
+                                    closedChat->chatTime = 0;
+                                    closedChat->myName = 0;
+                                    
+                                      /*设置sock为非阻塞状态使读写非阻塞*/
+                                    
+                                    char buffer[BUFFER_SIZE];
+                                    memset(buffer, 0, sizeof(buffer));
+                                    while (1)
                                     {
-                                        printf("此时好友不在线, 设计为不通信，返回上一级\n");
-                                        continue;
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        memset(buffer, 0, sizeof(buffer));
+                                        friendMessage->chatTime = time(NULL);
+                                        
+                                        scanf("%s", sendBuffer);
+                                        strncpy(friendMessage->content, (const char *)sendBuffer, sizeof(sendBuffer)); 
+                                        if (chatRoomObjConvertContent(buffer, friendMessage, obj))
+                                        {
+                                            printf("聊天结构体转json失败\n");
+                                            break;
+                                        }
+                                        send(sockfd, buffer, sizeof(buffer), 0);
+
+                                        memset(closedChat->friendName, 0, NAMESIZE);
+                                        closedChat->chatTime = 0;
+                                        memset(closedChat->content, 0, BUFFER_SIZE);
+
+                                        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) > 0)
+                                        {
+                                            if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
+                                            {
+                                                printf("json转聊天结构体失败\n");
+                                                break;
+                                                printf("%s, %ld\n %s\n", closedChat->myName, closedChat->chatTime, closedChat->content);
+                                            }
+                                        }
+                                        
+                                        
+                                        
+
                                     }
+                                    
+                                                                            
+                                }
+
+                                if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
+                                {
+                                    printf("此时好友不在线, 设计为不通信，返回上一级\n");
+                                    continue;
+                                }
                                 
                                 
 #endif
@@ -583,5 +630,4 @@ int main()
     }
     close(sockfd);
     return 0;
-}
 }

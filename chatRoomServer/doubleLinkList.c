@@ -447,9 +447,12 @@ DoubleLinkNode * DoubleLinkListAppointKeyValGetNode(DoubleLinkList * pList, ELEM
     DoubleLinkNode *travelNode = pList->head->next;
 
     int cmp = 0;
+    printf("452 -----------\n");
     while (travelNode != NULL)
     {
+        printf("452 -----------\n");
         cmp = compareFunc(val, travelNode->data);
+        
         if (cmp == 0)
         {
             return travelNode;
