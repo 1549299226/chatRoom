@@ -15,7 +15,7 @@
 #include "threadpool.h"
 #include "hashtable.h"
 #include <json-c/json_object.h>
-
+#include <fcntl.h>
 
 #define SERVER_PORT 9999
 #define MAX_LISTEN  128
@@ -44,7 +44,7 @@ void * pthread_Fun(int *arg)
 
     char sendBuffer[BUFFER_SIZE];
     memset(sendBuffer, 0, sizeof(sendBuffer));
-
+    
     while (1)
     {
         ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
@@ -778,77 +778,64 @@ void* handleClient(void* arg)
 
 
 
-                            //开一个线程处理群聊
-                        // pthread_create(&tid_groupchat, NULL, handle_group_chat, NULL);
-                            /*群聊 to do..*/
+                    //开一个线程处理群聊
+                    pthread_create(&tid_groupchat, NULL, handle_group_chat, NULL);
+                    /*群聊 to do..*/
                     }
-                        }
-
-                    /*私聊*/
-                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))//私聊
+                    }
+                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                {
+                    // memset(recvBuffer, 0, sizeof(recvBuffer));
+                    // recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    char buffer[BUFFER];
+                    memset(buffer, 0, sizeof(buffer));
+                    /* 检查该客户有没有好友*/
+                    if (client == NULL)
                     {
-                        // memset(recvBuffer, 0, sizeof(recvBuffer));
-                        // recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                        char buffer[BUFFER_SIZE];
-                        memset(buffer, 0, sizeof(buffer));
-                        /* 检查该客户有没有好友*/
-                        if (client == NULL)
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        strncpy(sendBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(sendBuffer));
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        printf("您暂时没有好友无法聊天,返回上一级\n");
+                        sleep(3);
+                        continue;
+                    }
+                    else
+                    {
+                        /*有好友将好友的信息发给该客户*/
+                        balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
+                        printf("527--- %s\n", buffer);
+                        send(acceptfd, buffer, sizeof(buffer), 0);
+                    }
+
+                    memset(buffer, 0, sizeof(buffer));
+                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                    {
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                        chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                        node->name = (char *)malloc(NAMESIZE);
+                        strncpy(node->name, recvBuffer, NAMESIZE);
+                        printf("540---%s---name:%s--\n", recvBuffer,node->name);
+                        
+                        /*查找该人员昵称是否为你的好友*/
+                        if (!chatRoomSelect(client, node))
                         {
-                            memset(sendBuffer, 0, sizeof(sendBuffer));
-                            strncpy(sendBuffer, "您暂时没有好友无法聊天,返回上一级", sizeof(sendBuffer));
+                            strncpy(sendBuffer, "他是你的好友", sizeof(recvBuffer));
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                            memset(sendBuffer, 0, sizeof(sendBuffer));
-                            printf("您暂时没有好友无法聊天,返回上一级\n");
-                            sleep(3);
-                            break;
+                          
                         }
-                        else
-                        {
-                            /*有好友将好友的信息发给该客户*/
-                            balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
-                            send(acceptfd, buffer, sizeof(buffer), 0);
-                        }
-                       
-                            memset(buffer, 0, sizeof(buffer));
-                            memset(recvBuffer, 0, sizeof(recvBuffer));
-                            ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                            if (ret == 0)
-                            {
-                                printf("客户端%d关闭\n", acceptfd);
-                                /*调用退出登录代码 to do*/
-                                close(acceptfd);
-                                return NULL;
-                            }
-                        while (1)
-                        {
-
-                            /*输入私聊对象的名字进行聊天*/
-                            if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
-                            {
-                                memset(recvBuffer, 0, sizeof(recvBuffer));
-                                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                                chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
-                                node->name = (char *)malloc(NAMESIZE);
-                                strncpy(node->name, recvBuffer, NAMESIZE);
-                                printf("670---%s---name:%s--\n", recvBuffer,node->name);
-                                memset(recvBuffer, 0, sizeof(recvBuffer));
-                                /*查找该人员昵称是否为你的好友*/
-                                if (!chatRoomSelect(client, node))
-                                {
-                                    strncpy(sendBuffer, "他是你的好友", sizeof(recvBuffer));
-                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                                    /*可以开始聊天了*/
-
-                            /*to do...*/
-                                }
+                    }
                     
-                    
-
-                    char * friendName = (char *)resolveFriendName(recvBuffer, friendMessage);
-
+                    printf("587---recvBuffer:%s\n", recvBuffer);
+                    char friendName[NAMESIZE];
+                    memset(friendName, 0, NAMESIZE);
+                    strncpy(friendName, recvBuffer, NAMESIZE);
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
                     /*判断好友是否在线 在线返回好友套接字fd */
                     int ret = searchFriendIfOnline(hashHandle->onlineTable, friendName);
-
+                        printf("594--ret:%d\n", ret);
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         if (ret > 0)   /*此时好友在线*/
                         {
@@ -856,7 +843,82 @@ void* handleClient(void* arg)
                             strncpy(sendBuffer, "好友在线", sizeof(sendBuffer));
                             send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                             memset(sendBuffer, 0, sizeof(sendBuffer)); 
+                           
+                            memset(buffer, 0, sizeof(buffer));
+                            recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                            printf("605----recvBuffer:%s\n", recvBuffer);
+                            char myAccountNumber[NAMESIZE];
+                            memset(myAccountNumber, 0, ACCOUNTNUMBER);
+                            strncpy(myAccountNumber, recvBuffer, ACCOUNTNUMBER);
+                            printf("609----myAccountNumber:%s\n", myAccountNumber);
+
+                            snprintf(buffer, sizeof(buffer), "SELECT name from chatRoom WHERE accountNumber = '%s'", myAccountNumber);
+                            if (mysql_query(conn, buffer))
+                            {
+                                printf("数据库错误\n");    
+                                exit(-1);
+                            }
+                            else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+                            {
+                                MYSQL_RES *res = mysql_use_result(conn);
+                                memset(buffer, 0, sizeof(buffer));
+                                if (res != NULL) 
+                                {
+                                    MYSQL_ROW row;
+                                    if ((row = mysql_fetch_row(res)) != NULL) 
+                                    {
+                                        
+                                        snprintf(buffer, sizeof(buffer), "%s", row[0]);
+                                        printf("628----buffer:%s\n", buffer);
+
+
+                                    }
+                                    mysql_free_result(res);  // 释放查询结果集
+                                }
+                            }
+                            printf("635----buffer:%s\n", buffer);
+
+                            /*自己的名字*/
+                            send(acceptfd, buffer, sizeof(buffer), 0);
+                            printf("buffer:%s\n",buffer);
+                            /*设置sock为非阻塞状态使读写非阻塞*/   
+                        //    fcntl(acceptfd, F_SETFL, O_NONBLOCK);
+                            
+                            // fcntl(ret, F_SETFL, O_NONBLOCK);
+                            memset(buffer, 0, sizeof(buffer));
                             /*发送消息给好友*/
+                            while (1)
+                            {   
+                                memset(buffer, 0, sizeof(buffer));
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                printf("recvbuffer:%s",recvBuffer);
+                                if (recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0) > 0)
+                                {
+                                    printf("652--读:%s",recvBuffer);
+                                    if (send(ret, recvBuffer, sizeof(recvBuffer), 0) == -1)
+                                    {
+                                        break;
+                                    }
+                                    
+                                }
+                                
+                                printf("660 recvbuffer:%s",recvBuffer);
+                                
+                                if (recv(ret, buffer, sizeof(buffer), 0))
+                                {
+                                    printf("663--读:%s",buffer);
+
+                                    if (send(acceptfd, buffer, sizeof(buffer), 0) == -1)
+                                    {
+                                        break;
+                                    }
+                                }
+                                
+                                
+                                
+                                 
+                            }
+                            
                             
                             
                         }
@@ -869,40 +931,11 @@ void* handleClient(void* arg)
                             continue;
                         }
                     }
-
-                     /*返回上一界面*/
-                            else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
-                            {
-                                memset(recvBuffer, 0, sizeof(recvBuffer));
-                                break;
-                            }
-                            /*输入错误*/
-                            else
-                            {
-                                memset(recvBuffer, 0, sizeof(recvBuffer));
-                                printf("输入错误，请重新输入\n");
-                                continue;
-                            }
                 }   
-                    }
-                     /*返回上一界面*/
-                    else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
-                    {
-                        memset(recvBuffer, 0, sizeof(recvBuffer));
-                        break;
-                    }
-                    /*输入错误*/
-                    else
-                    {
-                        memset(recvBuffer, 0, sizeof(recvBuffer));
-                        printf("输入错误，请重新输入\n");
-                        continue;
-                    }
-                }
             }
-                else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
-                {
-                    //删除好友
+            else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
+            {
+                //删除好友
             }
             else if (!strncmp(recvBuffer, "6", sizeof(recvBuffer)))
             {
@@ -943,13 +976,13 @@ void* handleClient(void* arg)
 
             }
         
-            
+        }   
 
             
-        }
+        
         
         // ... 原先的代码 ...
-    }
+    
     
 
     // 原先的代码结束
@@ -959,7 +992,7 @@ void* handleClient(void* arg)
     return NULL;
 }
 
-
+}
 int main()
 {   
     /*将Ctrl+z设置为退出程序*/
@@ -986,7 +1019,7 @@ int main()
     chatContent * friendMessage = NULL;
     groupChat * groupChatInfo = NULL;
 
-    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, existenceOrNot, compareFunc1, printStruct, node, &onlineTable);
+    chatRoomInit(&Message, &groupChatInfo, &friendMessage, &obj, &Info, &client, &online, &conn, compareFunc, compareFunc1, printStruct, node, &onlineTable);
 
     threadpool_t pool;
     int minThreads;

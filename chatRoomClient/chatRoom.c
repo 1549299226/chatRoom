@@ -28,6 +28,8 @@
 
 #define BUFFER_SIZE 100
 #define SEND_BUFFER 140
+
+#define CONTEBNT_SIZE 1024
 // struct 
 // {
 //     /* data */
@@ -137,7 +139,7 @@ int chatRoomInit(chatRoomMessage **Message, groupChat ** groupChatInfo, chatCont
     bzero((*friendMessage)->content, sizeof(char) * CONTENT_MAX);
 
     /*聊天时间初始化*/
-    time((*friendMessage)->chatTime);
+    time(&(*friendMessage)->chatTime);
 
     //群聊结构体初始化
     (*groupChatInfo) = (groupChat *) malloc(sizeof(groupChat));
@@ -795,7 +797,7 @@ static char *createJSONMessage(chatContent *chat)
     json_object_object_add(jobj, "friendName", json_object_new_string(chat->friendName));
     json_object_object_add(jobj, "myName", json_object_new_string(chat->myName));
     json_object_object_add(jobj, "content", json_object_new_string(chat->content));
-    json_object_object_add(jobj, "chatTime", json_object_new_int((int)*chat->chatTime));
+    json_object_object_add(jobj, "chatTime", json_object_new_int(chat->chatTime));
 
     const char *jsonStr = json_object_to_json_string(jobj);
 
@@ -853,7 +855,7 @@ int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chat
                     /*判断发送的消息是否超过140字符*/
                     truncateString(chat->content);
                     
-                    chat->chatTime = (time_t *)time(NULL);
+                    chat->chatTime = time(NULL);
                     chat->friendName = friendName;
                     chat->myName = message->name;
 
@@ -1212,6 +1214,7 @@ int chatRoomClientLogIn(char * buffer, chatRoomMessage * Message, json_object * 
 int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * obj) 
 {
 
+    obj = json_object_new_object();
      // 创建 json 对象并添加字段
     if (json_object_object_add(obj, "friendName", json_object_new_string(chat->friendName)) != 0) 
     {
@@ -1231,7 +1234,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
         return -1;
     }
 
-    if (json_object_object_add(obj, "time", json_object_new_int64(*chat->chatTime)) != 0) 
+    if (json_object_object_add(obj, "time", json_object_new_int64(chat->chatTime)) != 0) 
     {
         fprintf(stderr, "json_object_object_add failed for time\n");
         return -1;
@@ -1246,20 +1249,21 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
     json_object_put(obj);
     return 0;
 }
-
+    
 /*将json格式的字符串转换成原来chat*/
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj)
 {
     // 将 json 格式的字符串转换为 json 对象
+    obj = json_object_new_object();
     obj = json_tokener_parse(buffer);
     if (obj == NULL) 
     {
         fprintf(stderr, "json_tokener_parse failed\n");
         return -1;
     }
-
+    
     // 从 json 对象中读取字段
-    struct json_object * myNameObj = json_object_object_get(obj, "accountNumber");
+    struct json_object * myNameObj = json_object_object_get(obj, "myName");
     if (myNameObj != NULL) 
     {
         const char * myName = json_object_get_string(myNameObj);
@@ -1267,7 +1271,7 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         chat->myName[sizeof(chat->myName) - 1] = '\0';
     }
 
-    struct json_object * friendNameObj = json_object_object_get(obj, "password");
+    struct json_object * friendNameObj = json_object_object_get(obj, "friendName");
     if (friendNameObj != NULL) 
     {
         const char * friendName = json_object_get_string(friendNameObj);
@@ -1275,19 +1279,18 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         chat->friendName[sizeof(chat->friendName) - 1] = '\0';
     }
 
-    struct json_object * contentObj = json_object_object_get(obj, "name");
+    struct json_object * contentObj = json_object_object_get(obj, "content");
     if (contentObj != NULL) 
     {
         const char * content = json_object_get_string(contentObj);
-        strncpy(chat->content, content, sizeof(chat->content) - 1);
-        chat->content[sizeof(chat->content) - 1] = '\0';
+        strncpy(chat->content, content, CONTEBNT_SIZE - 1);
+        chat->content[CONTEBNT_SIZE - 1] = '\0';
     }
 
-    struct json_object * timeObj = json_object_object_get(obj, "mail");
+    struct json_object * timeObj = json_object_object_get(obj, "time");
     if (timeObj != NULL) 
     {
-        * chat->chatTime = json_object_get_int64(timeObj);
-        chat->chatTime[sizeof(chat->chatTime) - 1] = '\0';
+        chat->chatTime = json_object_get_int64(timeObj);
     }
 
     // 释放 json 对象的内存

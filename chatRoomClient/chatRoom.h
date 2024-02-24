@@ -27,7 +27,7 @@ typedef struct chatContent
     char * friendName;  //好友姓名
     char * myName;      //本人姓名
     char * content;     //聊天内容
-    time_t * chatTime;        //聊天时间
+    time_t  chatTime;        //聊天时间
 }  chatContent;
 
 typedef struct groupChat

@@ -448,8 +448,9 @@ DoubleLinkNode * DoubleLinkListAppointKeyValGetNode(DoubleLinkList * pList, ELEM
 
     int cmp = 0;
     while (travelNode != NULL)
-    {
+    {    
         cmp = compareFunc(val, travelNode->data);
+        
         if (cmp == 0)
         {
             return travelNode;

@@ -14,6 +14,7 @@
 #include "chatRoom.h"
 #include <json-c/json_object.h>
 #include <json-c/json.h>
+#include <fcntl.h>
 
 #define BUFFER_SIZE 1024
 #define SERVER_PORT 9999
@@ -22,6 +23,7 @@
 #define ACCOUNTNUMBER 6
 #define NAMESIZE 12
 
+#define TIME_SIZE 100
 
 void * pthread_Fun(int *arg)
 { 
@@ -63,7 +65,6 @@ int printStruct(void *arg)
              info->accountNumber, info->name);
     return ret;
 }
-
 
 
 int main()
@@ -607,6 +608,7 @@ int main()
  
                 }
                 /*私聊*/
+                   /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
                     memset(flag, 0, sizeof(flag));
@@ -616,80 +618,138 @@ int main()
                     {
                         printf("%s\n", recvBuffer);
                         memset(recvBuffer, 0, sizeof(recvBuffer));
-                        break;
+                        continue;
                     }
                     else
                     {
                         printf("以下是所有好友的信息:\n");
                         printf("%s\n", recvBuffer);
-                            
                     }
                     
 
-                            
-                        while (1)
+                    
+                    while (1)
+                    {
+                        printf("1、输入私聊对象的名字进行聊天\n");
+                        printf("2、退出返回上一界面\n");
+                        scanf("%s", flag);
+                        send(sockfd, flag, sizeof(flag), 0);
+
+                        if (!strncmp(flag, "1", sizeof(flag)))
                         {
-                            system("clear");
-                            printf("1、输入私聊对象的名字进行聊天\n");
-                            printf("2、退出返回上一界面\n");
-                            scanf("%s", flag);
-                            send(sockfd, flag, sizeof(flag), 0);
+                            memset(flag, 0, sizeof(flag));
+                            
+                            printf("请输入要聊天的好友姓名\n");
+                            scanf("%s", friendMessage->friendName);
+                            /*先清零缓冲区*/
+                            send(sockfd, friendMessage->friendName, NAMESIZE, 0);
+                            memset(sendBuffer, 0, sizeof(sendBuffer));
 
-                            if (!strncmp(flag, "1", sizeof(flag)))
+                            recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                            printf("%s\n", recvBuffer);
+                            if (!strncmp(recvBuffer, "他是你的好友", sizeof(recvBuffer))) /*好友存在时*/
                             {
-                                memset(flag, 0, sizeof(flag));
-                                    
-                                printf("请输入要聊天的好友姓名\n");
-                                scanf("%s", friendMessage->friendName);
-                                /*先清零缓冲区*/
-                                send(sockfd, friendMessage->friendName, NAMESIZE, 0);
-                                memset(sendBuffer, 0, sizeof(sendBuffer));
-
+#if 1 
+                                /*清空缓冲区*/
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    /*接收好友是否在线的信息*/
                                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                                printf("%s\n", recvBuffer);
-                                if (!strncmp(recvBuffer, "他是你的好友", sizeof(recvBuffer))) /*好友存在时*/
-                                {
-
-                                    /*可以开始聊天了*/
-                                    chatRoomPrivateChat(friendMessage->friendName, sockfd, friendMessage, Message);
-                                    
-                                    
-                                    /*清空缓冲区*/
-                                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                                        /*接收好友是否在线的信息*/
-                                    ret = recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                                    if (ret == -1) 
-                                    {
-                                            perror("recv error");  // 打印错误信息
-                                            printf("接收错误，返回上一级\n");
-                                            continue;
-                                            // 处理接收错误的情况
-                                    } 
-                                    else if (ret == 0) 
-                                    {
-                                        printf("Connection closed by peer\n");  // 连接被关闭
-                                            // 处理连接关闭的情况
-                                        printf("连接关闭错误，返回上一级\n");
-                                        continue;
-                                    } 
-                                    else 
-                                    {
-                                            // 接收到数据成功
-                                        //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
-                                        if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
-                                        {
-                                            printf("好友在线\n");
-                                                                                    
-                                        }
-
-                                    if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
-                                    {
-                                        printf("此时好友不在线, 设计为不通信，返回上一级\n");
-                                        continue;
-                                    }
                                 
-                                    }
+                                
+                                    // 接收到数据成功
+                                //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
+                                if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
+                                {
+                                    printf("%s\n",recvBuffer);
 
+                                    send(sockfd, Message->accountNumber , ACCOUNTNUMBER, 0);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    strncpy(friendMessage->myName, recvBuffer, NAMESIZE); 
+                                    // printf("482----friendMessage->myName:%s\n", friendMessage->myName);
+                                    // printf("482----recvBuffer:%s\n", recvBuffer);
+                                    
+                                    chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
+                                    memset(closedChat, 0, sizeof(chatContent));
+                                    closedChat->content = (char *)malloc(BUFFER_SIZE);
+                                    memset(closedChat->content, 0, BUFFER_SIZE);
+                                    closedChat->friendName = (char *)malloc(NAMESIZE);
+                                    memset(closedChat->friendName, 0, NAMESIZE);
+                                    closedChat->chatTime = 0;
+                                    closedChat->myName = (char *)malloc(NAMESIZE);
+                                    memset(closedChat->myName, 0, NAMESIZE);
+                                    
+                                    
+                                    char *dateStr = (char *)malloc(TIME_SIZE);
+                                    memset(dateStr, 0, sizeof(dateStr));
+                                    char buffer[BUFFER_SIZE];
+                                    memset(buffer, 0, sizeof(buffer));
+                                    while (1)
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        memset(buffer, 0, sizeof(buffer));
+                                        friendMessage->chatTime = time(NULL);
+                                        
+                                        scanf("%s", sendBuffer);
+                                        strncpy(friendMessage->content, (const char *)sendBuffer, sizeof(sendBuffer)); 
+                                        if (chatRoomObjConvertContent(buffer, friendMessage, obj))
+                                        {
+                                            printf("聊天结构体转json失败\n");
+                                            break;
+                                        }
+                                        if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
+                                        {
+                                            perror("send");
+                                            break;
+                                    
+                                        }
+                                        //printf("518---buffer:%s\n",buffer);
+
+                                        memset(closedChat->friendName, 0, NAMESIZE);
+                                        closedChat->chatTime = 0;
+                                        memset(closedChat->content, 0, BUFFER_SIZE);
+                                        memset(closedChat->myName, 0, NAMESIZE);
+
+                                        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
+                                        {
+                                            perror("recv");
+                                            break;
+                                        }
+                                        if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
+                                        {
+                                            printf("json转聊天结构体失败\n");
+                                            break;
+                                        }
+                                        // printf("533--读:%s\n",recvBuffer);
+                                        // printf("539--聊天内容：%s\n",closedChat->content);
+                                        
+                                        memset(dateStr, 0, sizeof(dateStr));
+
+                                        /*将时间戳转换成表示日期的字符串*/
+                                        dateStr = ctime(&closedChat->chatTime);
+                                        struct tm *localTime = localtime(&closedChat->chatTime);
+                                        char formattedTime[TIME_SIZE];
+                                        memset(formattedTime, 0, TIME_SIZE);
+
+                                        /*自定义时间的表示*/
+                                        strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
+                                        printf("friendname:%s, time:%s \n %s\n", closedChat->myName, formattedTime, closedChat->content);
+                                        
+
+                                    }
+                                    
+                                                                            
+                                }
+
+                                if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
+                                {
+                                    printf("此时好友不在线, 设计为不通信，返回上一级\n");
+                                    continue;
+                                }
+                                
+                                
+#endif
                             }
                             else
                             {
@@ -697,44 +757,30 @@ int main()
                                 continue;
 
                             }
-                            }
-
                             
-                            //退出返回上一级
-                            else if (!strncmp(flag, "2", sizeof(flag)))
-                            {
-                                memset(flag, 0, sizeof(flag));
-                                system("clear");
-                                break;
-                            }
-                            else 
-                            {
-                                memset(flag, 0, sizeof(flag));
-                                printf("无效的输入，请重新输入\n");
-                                continue;
-                            }
 
                         }
+                        else if (!strncmp(flag, "2", sizeof(flag)))
+                        {
+                            memset(flag, 0, sizeof(flag));
+                            mainInterface();
+                            break;
+                        }
+                        else 
+                        {
+                            memset(flag, 0, sizeof(flag));
+                            printf("无效的输入，请重新输入\n");
+                            mainInterface();
+                            continue;
+                        }
 
-                    }
-                    /*返回上一级 主界面*/
-                    else if (!strncmp(flag, "3", sizeof(flag)))
-                    {
-                        memset(flag, 0, sizeof(flag));
-                        system("clear");
-                        break;
-                    }
-                    else//无效输入
-                    {
-                        memset(flag, 0, sizeof(flag));
-                        
-                        printf("无效的输入,请重新输入\n");
-                        continue;
                     }
 
                 }
 
+                }
             }
+
             else if (!strncmp(flag, "3", sizeof(flag)))//删除好友
             {
                 //删除好友
@@ -750,11 +796,11 @@ int main()
                 printf("%s\n", recvBuffer);
                 sleep(3);
                 memset(recvBuffer, 0, sizeof(recvBuffer));
-#if 1                
+                
                 logoutCleanup(Message, friendMessage, obj, conn, node);
                 free(flag);
                 quitChatInterface();//进入退出界面
-#endif
+
                 break;
 
 
@@ -774,14 +820,7 @@ int main()
             }
         }
         
-        
-        
-        while (1)
-        {
-            threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &sockfd);
-        }
-        
-        
+    
     
     }
     close(sockfd);

@@ -48,9 +48,12 @@ enum CHOIVE
 
 int compareFunc(void *val1, void *val2)
 {
+    printf("50-----------------\n");
     hashNode *key1 = (hashNode *)val1;
-    hashNode *key2 = (hashNode *)val2;
+    printf("52-----------------\n");
 
+    hashNode *key2 = (hashNode *)val2;
+    printf("key1->real_key:%d, key2->real_key:%d\n", key1->real_key, key2->real_key);
     return key1->real_key - key2->real_key;
 }
 
@@ -166,7 +169,7 @@ int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatCon
     bzero((*friendMessage)->content, sizeof(char) * CONTENT_MAX);
 
     /*聊天时间初始化*/
-    time((*friendMessage)->chatTime);
+    time(&(*friendMessage)->chatTime);
 
     //群聊结构体初始化
     (*groupChatInfo) = (groupChat *) malloc(sizeof(groupChat));
@@ -277,7 +280,13 @@ int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatCon
 
     
     int onlineFriNum = MAX_ONLINE;
-    hashTableInit(onlineTable, onlineFriNum, hashTableCompare);
+    if (*onlineTable)
+    {
+        printf("你好\n");
+        return ret;
+    }
+    
+    hashTableInit(onlineTable, onlineFriNum, compareFunc);
     
     printf("你好\n");
 
@@ -718,7 +727,7 @@ int getAsciiSum(const char *name)
         sum += *name; // 获取当前字符的 ASCII 值并累加
         name++;
     }
-
+    
     return sum;
 }
 
@@ -748,6 +757,7 @@ int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 int searchFriendIfOnline(HashTable * onlineTable, char * name)
 {
     int hash_name = getAsciiSum(name);
+    printf("756--hash_name:%d\n", hash_name);
     if (onlineTable == NULL)
     {
         printf("无在线好友\n");
@@ -772,12 +782,14 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name)
     pHashtable->slotNums = SLOTNUMS_MAX;
     pHashtable->compareFunc = compareFunc;
 #endif
-    if (! hashTableGetAppointKeyValue(onlineTable, hash_name, &mapVal))   /*找到在线好友的句柄*/ 
+    printf("781---%p\n", &mapVal);
+    if (!hashTableGetAppointKeyValue(onlineTable, hash_name, &mapVal))   /*找到在线好友的句柄*/ 
     {
+        printf("784---%d\n", mapVal);
         return mapVal;
     } 
-     
-    return -2;
+    printf("787---%d\n", mapVal);
+    return -1;
 }
 
 /* 指定好友是否在线 */
@@ -1303,7 +1315,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
         return -1;
     }
 
-    if (json_object_object_add(obj, "time", json_object_new_int64(*chat->chatTime)) != 0) 
+    if (json_object_object_add(obj, "time", json_object_new_int64(chat->chatTime)) != 0) 
     {
         fprintf(stderr, "json_object_object_add failed for time\n");
         return -1;
@@ -1358,8 +1370,7 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     struct json_object * timeObj = json_object_object_get(obj, "mail");
     if (timeObj != NULL) 
     {
-        *chat->chatTime = json_object_get_int64(timeObj);
-        chat->chatTime[sizeof(chat->chatTime) - 1] = '\0';
+        chat->chatTime = json_object_get_int64(timeObj);
     }
 
     // 释放 json 对象的内存
