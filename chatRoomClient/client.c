@@ -56,6 +56,10 @@ void Off(int arg)
     exit(-1);
 }
 
+void exitChat(int * arg)
+{
+    *arg = 1;
+}
 //自定义打印
 int printStruct(void *arg)
 {
@@ -66,6 +70,63 @@ int printStruct(void *arg)
     return ret;
 }
 
+void * private_chat(void * arg)
+{
+    
+    int sockfd = *(int *)arg;
+    char recvBuffer[BUFFER_SIZE];
+    memset(recvBuffer, 0, sizeof(recvBuffer));
+    chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
+    memset(closedChat, 0, sizeof(chatContent));
+    closedChat->content = (char *)malloc(BUFFER_SIZE);
+    memset(closedChat->content, 0, BUFFER_SIZE);
+    closedChat->friendName = (char *)malloc(NAMESIZE);
+    memset(closedChat->friendName, 0, NAMESIZE);
+    closedChat->chatTime = 0;
+
+    closedChat->myName = (char *)malloc(NAMESIZE);
+    memset(closedChat->myName, 0, NAMESIZE);
+    
+    json_object * obj = NULL;
+    char *dateStr = (char *)malloc(TIME_SIZE);
+    while (1)
+    {
+        
+        memset(closedChat->friendName, 0, NAMESIZE);
+        closedChat->chatTime = 0;
+        memset(closedChat->content, 0, BUFFER_SIZE);
+        memset(closedChat->myName, 0, NAMESIZE);
+        memset(dateStr, 0, sizeof(dateStr));
+        // printf("100 recvBuffer:%s\n", recvBuffer);
+
+        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
+        {
+            perror("recv");
+            break;
+        }
+        //printf("105 recvBuffer:%s\n", recvBuffer);
+        if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
+        {
+            printf("json转聊天结构体失败\n");
+            break;
+        }
+        memset(dateStr, 0, sizeof(dateStr));
+
+        /*将时间戳转换成表示日期的字符串*/
+        dateStr = ctime(&closedChat->chatTime);
+        struct tm *localTime = localtime(&closedChat->chatTime);
+        char formattedTime[TIME_SIZE];
+        memset(formattedTime, 0, TIME_SIZE);
+
+        /*自定义时间的表示*/
+        strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
+        printf("friendname:%s, time:%s \n %s\n", closedChat->myName, formattedTime, closedChat->content);
+        
+         
+    }
+    
+    
+}
 
 int main()
 {
@@ -79,6 +140,7 @@ int main()
         exit(-1);
     }
     
+    pthread_t tid_oto;
     chatRoomMessage *Message = NULL;
     json_object *obj = NULL;
     Friend *Info = NULL;
@@ -483,33 +545,35 @@ int main()
                                     // printf("482----friendMessage->myName:%s\n", friendMessage->myName);
                                     // printf("482----recvBuffer:%s\n", recvBuffer);
                                     
-                                    chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
-                                    memset(closedChat, 0, sizeof(chatContent));
-                                    closedChat->content = (char *)malloc(BUFFER_SIZE);
-                                    memset(closedChat->content, 0, BUFFER_SIZE);
-                                    closedChat->friendName = (char *)malloc(NAMESIZE);
-                                    memset(closedChat->friendName, 0, NAMESIZE);
-                                    closedChat->chatTime = 0;
-                                    closedChat->myName = (char *)malloc(NAMESIZE);
-                                    memset(closedChat->myName, 0, NAMESIZE);
-                                    
-                                    
-                                    char *dateStr = (char *)malloc(TIME_SIZE);
-                                    memset(dateStr, 0, sizeof(dateStr));
+                                    int shouldExit = 0;
+                                    // signal(SIGINT, SIG_IGN);
+                                    // signal(SIGINT, exitChat);
                                     char buffer[BUFFER_SIZE];
                                     memset(buffer, 0, sizeof(buffer));
-                                    while (1)
+                                    pthread_create(&tid_oto, 0, private_chat, (void *)&sockfd);
+                                    while (!shouldExit)
                                     {
-                                        memset(recvBuffer, 0, sizeof(recvBuffer));
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         memset(buffer, 0, sizeof(buffer));
                                         friendMessage->chatTime = time(NULL);
-                                        
                                         scanf("%s", sendBuffer);
-                                        strncpy(friendMessage->content, (const char *)sendBuffer, sizeof(sendBuffer)); 
+                                        
+                                        strncpy(friendMessage->content, sendBuffer, sizeof(sendBuffer)); 
                                         if (chatRoomObjConvertContent(buffer, friendMessage, obj))
                                         {
                                             printf("聊天结构体转json失败\n");
+                                            break;
+                                        }
+                                        // printf("560---sendBuffer:%s\n", sendBuffer);
+                                        // printf("???????????????\n");
+                                        while (getchar() != '\n');
+
+                                        
+                                        
+                                        if (strlen(sendBuffer) == 1 && sendBuffer[0] == 27)
+                                        {
+                                            printf("客户端的写已关闭\n");
+                                            send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                                             break;
                                         }
                                         if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
@@ -518,39 +582,10 @@ int main()
                                             break;
                                     
                                         }
-                                        //printf("518---buffer:%s\n",buffer);
-
-                                        memset(closedChat->friendName, 0, NAMESIZE);
-                                        closedChat->chatTime = 0;
-                                        memset(closedChat->content, 0, BUFFER_SIZE);
-                                        memset(closedChat->myName, 0, NAMESIZE);
-
-                                        if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
-                                        {
-                                            perror("recv");
-                                            break;
-                                        }
-                                        if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
-                                        {
-                                            printf("json转聊天结构体失败\n");
-                                            break;
-                                        }
+                                        // printf("发送成功\n");
                                         // printf("533--读:%s\n",recvBuffer);
                                         // printf("539--聊天内容：%s\n",closedChat->content);
-                                        
-                                        memset(dateStr, 0, sizeof(dateStr));
-
-                                        /*将时间戳转换成表示日期的字符串*/
-                                        dateStr = ctime(&closedChat->chatTime);
-                                        struct tm *localTime = localtime(&closedChat->chatTime);
-                                        char formattedTime[TIME_SIZE];
-                                        memset(formattedTime, 0, TIME_SIZE);
-
-                                        /*自定义时间的表示*/
-                                        strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
-                                        printf("friendname:%s, time:%s \n %s\n", closedChat->myName, formattedTime, closedChat->content);
-                                        
-
+                                       
                                     }
                                     
                                                                             

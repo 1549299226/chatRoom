@@ -56,6 +56,12 @@ typedef struct chatHash
     int sockfd;
 }chatHash;
 
+typedef struct chatOTO
+{
+    char * otoBuffer;
+    int sockfd;
+}chatOTO;
+
 int existenceOrNot(void *arg1, void *arg2);
 
 
