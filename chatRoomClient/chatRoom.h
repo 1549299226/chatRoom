@@ -58,7 +58,7 @@ typedef struct chatHash
 
 typedef struct chatOTO
 {
-    char * otoBuffer;
+    int otoBuffer;
     int sockfd;
 }chatOTO;
 

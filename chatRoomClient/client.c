@@ -72,8 +72,8 @@ int printStruct(void *arg)
 
 void * private_chat(void * arg)
 {
-    
-    int sockfd = *(int *)arg;
+    pthread_detach(pthread_self());
+    int sockfd = ((chatOTO *)arg)->sockfd;
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
     chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
@@ -89,7 +89,7 @@ void * private_chat(void * arg)
     
     json_object * obj = NULL;
     char *dateStr = (char *)malloc(TIME_SIZE);
-    while (1)
+    while (((chatOTO *)arg)->otoBuffer == 1)
     {
         
         memset(closedChat->friendName, 0, NAMESIZE);
@@ -124,7 +124,7 @@ void * private_chat(void * arg)
         
          
     }
-    
+    pthread_exit(NULL);
     
 }
 
@@ -531,7 +531,9 @@ int main()
                                     /*接收好友是否在线的信息*/
                                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                 
-                                
+                                chatOTO oto;
+                                oto.sockfd = sockfd;
+                                oto.otoBuffer = 1;
                                     // 接收到数据成功
                                 //recvBuffer[ret] = '\0';  // 在接收到的数据末尾添加字符串结束符
                                 if (!strncmp(recvBuffer, "好友在线", sizeof(recvBuffer)))
@@ -550,12 +552,13 @@ int main()
                                     // signal(SIGINT, exitChat);
                                     char buffer[BUFFER_SIZE];
                                     memset(buffer, 0, sizeof(buffer));
-                                    pthread_create(&tid_oto, 0, private_chat, (void *)&sockfd);
+                                    pthread_create(&tid_oto, 0, private_chat, (void *)&oto);
                                     while (!shouldExit)
                                     {
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         memset(buffer, 0, sizeof(buffer));
                                         friendMessage->chatTime = time(NULL);
+                                        while (getchar() != '\n');
                                         scanf("%s", sendBuffer);
                                         
                                         strncpy(friendMessage->content, sendBuffer, sizeof(sendBuffer)); 
@@ -566,13 +569,14 @@ int main()
                                         }
                                         // printf("560---sendBuffer:%s\n", sendBuffer);
                                         // printf("???????????????\n");
-                                        while (getchar() != '\n');
+                                        
 
                                         
                                         
                                         if (strlen(sendBuffer) == 1 && sendBuffer[0] == 27)
                                         {
                                             printf("客户端的写已关闭\n");
+                                            oto.otoBuffer = 0;
                                             send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                                             break;
                                         }
@@ -582,6 +586,7 @@ int main()
                                             break;
                                     
                                         }
+                                        printf("585--长度:%ld\n", strlen(sendBuffer));
                                         // printf("发送成功\n");
                                         // printf("533--读:%s\n",recvBuffer);
                                         // printf("539--聊天内容：%s\n",closedChat->content);
