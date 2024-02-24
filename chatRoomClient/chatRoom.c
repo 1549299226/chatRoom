@@ -28,6 +28,8 @@
 
 #define BUFFER_SIZE 100
 #define SEND_BUFFER 140
+
+#define CONTEBNT_SIZE 1024
 // struct 
 // {
 //     /* data */
@@ -1220,7 +1222,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
     json_object_put(obj);
     return 0;
 }
-
+    
 /*将json格式的字符串转换成原来chat*/
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj)
 {
@@ -1232,9 +1234,9 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         fprintf(stderr, "json_tokener_parse failed\n");
         return -1;
     }
-
+    
     // 从 json 对象中读取字段
-    struct json_object * myNameObj = json_object_object_get(obj, "accountNumber");
+    struct json_object * myNameObj = json_object_object_get(obj, "myName");
     if (myNameObj != NULL) 
     {
         const char * myName = json_object_get_string(myNameObj);
@@ -1242,7 +1244,7 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         chat->myName[sizeof(chat->myName) - 1] = '\0';
     }
 
-    struct json_object * friendNameObj = json_object_object_get(obj, "password");
+    struct json_object * friendNameObj = json_object_object_get(obj, "friendName");
     if (friendNameObj != NULL) 
     {
         const char * friendName = json_object_get_string(friendNameObj);
@@ -1250,15 +1252,15 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
         chat->friendName[sizeof(chat->friendName) - 1] = '\0';
     }
 
-    struct json_object * contentObj = json_object_object_get(obj, "name");
+    struct json_object * contentObj = json_object_object_get(obj, "content");
     if (contentObj != NULL) 
     {
         const char * content = json_object_get_string(contentObj);
-        strncpy(chat->content, content, sizeof(chat->content) - 1);
-        chat->content[sizeof(chat->content) - 1] = '\0';
+        strncpy(chat->content, content, CONTEBNT_SIZE - 1);
+        chat->content[CONTEBNT_SIZE - 1] = '\0';
     }
 
-    struct json_object * timeObj = json_object_object_get(obj, "mail");
+    struct json_object * timeObj = json_object_object_get(obj, "time");
     if (timeObj != NULL) 
     {
         chat->chatTime = json_object_get_int64(timeObj);

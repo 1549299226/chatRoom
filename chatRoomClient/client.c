@@ -23,6 +23,7 @@
 #define ACCOUNTNUMBER 6
 #define NAMESIZE 12
 
+#define TIME_SIZE 100
 
 void * pthread_Fun(int *arg)
 { 
@@ -479,8 +480,8 @@ int main()
                                     memset(recvBuffer, 0, sizeof(recvBuffer));
                                     recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                     strncpy(friendMessage->myName, recvBuffer, NAMESIZE); 
-                                    printf("482----friendMessage->myName:%s\n", friendMessage->myName);
-                                    printf("482----recvBuffer:%s\n", recvBuffer);
+                                    // printf("482----friendMessage->myName:%s\n", friendMessage->myName);
+                                    // printf("482----recvBuffer:%s\n", recvBuffer);
                                     
                                     chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
                                     memset(closedChat, 0, sizeof(chatContent));
@@ -489,10 +490,12 @@ int main()
                                     closedChat->friendName = (char *)malloc(NAMESIZE);
                                     memset(closedChat->friendName, 0, NAMESIZE);
                                     closedChat->chatTime = 0;
-                                    closedChat->myName = 0;
+                                    closedChat->myName = (char *)malloc(NAMESIZE);
+                                    memset(closedChat->myName, 0, NAMESIZE);
                                     
                                     
-                                    
+                                    char *dateStr = (char *)malloc(TIME_SIZE);
+                                    memset(dateStr, 0, sizeof(dateStr));
                                     char buffer[BUFFER_SIZE];
                                     memset(buffer, 0, sizeof(buffer));
                                     while (1)
@@ -515,11 +518,12 @@ int main()
                                             break;
                                     
                                         }
-                                        printf("buffer:%s\n",buffer);
+                                        //printf("518---buffer:%s\n",buffer);
 
                                         memset(closedChat->friendName, 0, NAMESIZE);
                                         closedChat->chatTime = 0;
                                         memset(closedChat->content, 0, BUFFER_SIZE);
+                                        memset(closedChat->myName, 0, NAMESIZE);
 
                                         if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
                                         {
@@ -531,9 +535,20 @@ int main()
                                             printf("json转聊天结构体失败\n");
                                             break;
                                         }
-                                        printf("533--读:%s\n",recvBuffer);
+                                        // printf("533--读:%s\n",recvBuffer);
+                                        // printf("539--聊天内容：%s\n",closedChat->content);
                                         
-                                        printf("friendname:%s, time:%ld \n %s\n", closedChat->myName, closedChat->chatTime, closedChat->content);
+                                        memset(dateStr, 0, sizeof(dateStr));
+
+                                        /*将时间戳转换成表示日期的字符串*/
+                                        dateStr = ctime(&closedChat->chatTime);
+                                        struct tm *localTime = localtime(&closedChat->chatTime);
+                                        char formattedTime[TIME_SIZE];
+                                        memset(formattedTime, 0, TIME_SIZE);
+
+                                        /*自定义时间的表示*/
+                                        strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
+                                        printf("friendname:%s, time:%s \n %s\n", closedChat->myName, formattedTime, closedChat->content);
                                         
 
                                     }
@@ -617,14 +632,7 @@ int main()
             }
         }
         
-        
-        
-        while (1)
-        {
-            threadPoolAddTask(pool, (void *)pthread_Fun, (void *) &sockfd);
-        }
-        
-        
+    
     
     }
     close(sockfd);
