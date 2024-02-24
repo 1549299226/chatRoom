@@ -788,7 +788,7 @@ int searchFriendIfOnline(HashTable * onlineTable, char * name)
         return mapVal;
     } 
     printf("787---%d\n", mapVal);
-    return -2;
+    return -1;
 }
 
 /* 指定好友是否在线 */
