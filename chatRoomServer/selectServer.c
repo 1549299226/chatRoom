@@ -885,7 +885,7 @@ void* handleClient(void* arg)
                 }   
                     }
                      /*返回上一界面*/
-                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                    else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         break;

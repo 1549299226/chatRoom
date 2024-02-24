@@ -525,15 +525,14 @@ int main()
                                                 if (!strncmp(recvBuffer, "他是你的好友,入群成功", sizeof(recvBuffer)))
                                                 {
                                                     printf("%s\n", recvBuffer);
-            
+                                                    memset(recvBuffer, 0, sizeof(recvBuffer));
 
                                                 }
                                                 else if (!strncmp(recvBuffer, "出现错误，入群失败", sizeof(recvBuffer)))
                                                 {
                                                     printf("%s\n", recvBuffer);
-                                                    sleep(1);
+                                                    memset(recvBuffer, 0, sizeof(recvBuffer));
                                                     
-
                                                 }
 
                                             printf("选择接下来的操作:1、退出2、继续添加好友\n");
@@ -557,7 +556,7 @@ int main()
                                         else if (!strncmp(recvBuffer, "重名/创建群名失败", sizeof(recvBuffer)))
                                         {
                                             printf("%s\n", recvBuffer);
-                                            sleep(2);
+                                            sleep(1);
                                             memset(recvBuffer, 0, sizeof(recvBuffer));
                                             continue;
                                         }
