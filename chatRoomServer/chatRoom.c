@@ -807,20 +807,23 @@ int FriendOnlineOrNot(Friend *client, HashTable *onlineTable, chatHash * onlineH
 /*建立群名 成功返回1 失败返回0*/
 int createGroupName(char *groupChatName, MYSQL *conn, chatRoomMessage * Message)
 {
+    if (groupChatName == NULL)
+    {
+        return 0;
+    }
     int ret = 1;
     char buffer[BUFFER_SIZE_M];
     memset(buffer, 0, BUFFER_SIZE_M);
     /* 先判断是否有这个表没有则创建有则跳过 */
     snprintf(buffer, sizeof(buffer),            
-                "CREATE TABLE IF NOT EXISTS `groupChat%s` ("
-        "groupChatName VARCHAR(50) PRIMARY KEY)", Message->accountNumber);
+      "CREATE TABLE IF NOT EXISTS `groupChat%s` ("
+        "groupChatName VARCHAR(50) PRIMARY KEY )", Message->accountNumber);
     
     if (mysql_query(conn, buffer)) 
     {
         printf("系统错误，创群失败: %s\n", mysql_error(conn));
         exit(-1);
     }
-    
     memset(buffer, 0, BUFFER_SIZE_M);
 
     /*查询是否有重复群名*/
@@ -876,6 +879,18 @@ int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_trave
     MYSQL_ROW row;
     char buffer[BUFFER_SIZE_M];
     memset(buffer, 0, sizeof(buffer));
+    
+    snprintf(buffer, sizeof(buffer),  "CREATE TABLE IF NOT EXISTS `groupChat%s` ("
+        "groupChatName VARCHAR(50) PRIMARY KEY)" ,
+        Message->accountNumber);
+    if (mysql_query(conn, buffer)) 
+    {
+        printf("系统错误，创表失败: %s\n", mysql_error(conn));
+        exit(-1);
+    }
+    
+    memset(buffer, 0, sizeof(buffer));
+
 
     char queryBuffer[BUFFER_SIZE_M];
     memset(queryBuffer, 0, sizeof(queryBuffer));
@@ -893,7 +908,7 @@ int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_trave
     buffer[0] = '\0';
     while ((row = mysql_fetch_row(res)) != NULL) 
     {
-        strcat(buffer, "[groupName]\n");
+        strcat(buffer, "[groupName]\t");
         strcat(buffer, row[0]);
         strcat(buffer, "\t");
     }
@@ -904,6 +919,38 @@ int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_trave
     // 将结果拷贝到 str_travel 中
     strcpy(str_travel, buffer);
     mysql_free_result(res);
+    return 1;
+}
+
+/*拉取群成员*/
+int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, groupChat * groupChatInfo)
+{
+
+    char insertBuffer[BUFFER_SIZE_M];
+    memset(insertBuffer, 0, sizeof(insertBuffer));
+    sprintf(insertBuffer, "CREATE TABLE IF NOT EXISTS `%s` ("
+        "memberName VARCHAR(50) PRIMARY KEY,"  "groupChatTime DATETIME, "
+    "groupChatContent TEXT)", groupChatInfo->groupChatName);
+    
+    if (mysql_query(conn, insertBuffer)) 
+    {
+        printf("系统错误，创表失败: %s\n", mysql_error(conn));
+        exit(-1);
+    }
+
+    memset(insertBuffer, 0, sizeof(insertBuffer));
+    sprintf(insertBuffer, "INSERT INTO `%s` (memberName) VALUES "
+    "('%s')",
+    groupChatInfo->groupChatName, memberName);
+    // 执行插入操作
+    if (mysql_query(conn, insertBuffer)) 
+    {
+        fprintf(stderr, "%s\n", mysql_error(conn));
+        mysql_close(conn);
+        
+        return -1;
+    }
+
     return 1;
 }
 
