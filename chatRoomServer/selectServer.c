@@ -604,7 +604,84 @@ void* handleClient(void* arg)
 
                             if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
                             {
-                                
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                // groupChatInfo->groupChatName = recvBuffer;
+                                strncpy(groupChatInfo->groupChatName, recvBuffer, sizeof(groupChatInfo->groupChatName));
+                                /*遍历表中的成员名*/
+                                char *resultString = (char *)malloc(sizeof(BUFFER_SIZE));
+                                memset(resultString, 0, sizeof(resultString));
+                                int result = iterateTableAndReturnString(resultString, conn, groupChatInfo);
+                                printf("%d\n", result);
+                                if (result != 0) 
+                                {
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    strncpy(sendBuffer, resultString, sizeof(sendBuffer));
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+
+                                    printf("Result String: %s\n", resultString);
+                                    // 分割字符串并存储到字符串数组中
+                                    char * str_members[BUFFER_SIZE];
+                                    memset(str_members, 0, sizeof(str_members));
+
+                                    char online_fd[BUFFER_SIZE];  
+                                    memset(online_fd, 0, sizeof(online_fd));                             
+
+                                    int count = 0;
+                                    int count_fd = 0;
+                                    
+
+                                    char *token = strtok(resultString, " ");
+                                    while (token != NULL && count < BUFFER_SIZE) 
+                                    {
+                                        str_members[count] = token;
+                                        ret = searchFriendIfOnline(hashHandle->onlineTable, str_members[count]);
+                                        
+                                        if (ret != 0)
+                                        {
+                                            online_fd[count_fd] = ret;
+                                            count_fd++;
+                                        }
+                                        count++;
+                                        token = strtok(NULL, " ");
+                                    }
+                                    if (count_fd > 0)//有好友在线
+                                    {
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        strncpy(sendBuffer, "请输入聊天内容", sizeof(sendBuffer));
+                                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        int bytes = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                        if (bytes > 0)
+                                        {
+                                            for (int idx = 0; idx <= count_fd; idx++)
+                                            {
+                                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                                send(online_fd[count_fd], sendBuffer, sizeof(sendBuffer), 0);
+
+                                            }
+                                        }
+
+                                        
+                                    }
+                                    else
+                                    {
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        strncpy(sendBuffer, "没有好友在线无法聊天，返回上一级", sizeof(sendBuffer));
+                                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                                    }
+
+
+                                    free(resultString); // Free allocated memory
+                                } 
+                                else 
+                                {
+                                    printf("Failed to retrieve result string\n");
+                                }
                                 
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 continue;
@@ -807,9 +884,12 @@ void* handleClient(void* arg)
                         printf("527--- %s\n", buffer);
                         send(acceptfd, buffer, sizeof(buffer), 0);
                     }
+                    while (1)
+                    {
+                        memset(buffer, 0, sizeof(buffer));
+                        recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                    }
 
-                    memset(buffer, 0, sizeof(buffer));
-                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                     if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
                     {
                         memset(recvBuffer, 0, sizeof(recvBuffer));

@@ -450,6 +450,32 @@ int main()
                             /*输入群聊名称进行聊天*/
                             if (!strncmp(flag, "1", sizeof(flag)))
                             {
+                                printf("请输入群名\n");
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+                                scanf("%s", sendBuffer);
+                                send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                printf("群成员：%s\n", recvBuffer);
+                                
+                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                if (!strncmp(recvBuffer, "请输入聊天内容", sizeof(recvBuffer)))
+                                {
+                                    printf("%s", recvBuffer);
+                                    scanf("%s", groupChatInfo->groupChatContent);
+                                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                                    send(sockfd, groupChatInfo->groupChatContent, sizeof(groupChatInfo->groupChatContent), 0);
+
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                     
+                                    printf("你收到一条群聊消息:%s\n", recvBuffer);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+
+                                }
+
                                 memset(flag, 0, sizeof(flag));
                                 continue;
 

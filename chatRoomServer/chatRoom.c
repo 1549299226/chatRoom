@@ -966,6 +966,49 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, gr
     return 1;
 }
 
+/*遍历表中的成员名*/
+int iterateTableAndReturnString(char * resultString, MYSQL *conn, groupChat * groupChatInfo)
+{
+    char buffer[BUFFER_SIZE_M];
+    memset(buffer, 0, sizeof(buffer));
+    sprintf(buffer, "SELECT COUNT(*) FROM %s", groupChatInfo->groupChatName);
+    if (mysql_query(conn, buffer) == 0) 
+    {
+        MYSQL_RES *result = mysql_store_result(conn);
+        if (result != NULL) 
+        {
+            MYSQL_ROW row = mysql_fetch_row(result);
+            int rowCount = atoi(row[0]);
+            printf("rowCount%d\n", rowCount);
+            mysql_free_result(result);
+            
+            
+            
+            for (int n = 0; n < rowCount; n++) 
+            {
+                sprintf(buffer, "SELECT memberName FROM %s LIMIT %d, 1", groupChatInfo->groupChatName, n);
+                if (mysql_query(conn, buffer) == 0) 
+                {
+                    result = mysql_store_result(conn);
+                    if (result != NULL) 
+                    {
+                        MYSQL_ROW row = mysql_fetch_row(result);
+                        if (row != NULL && row[0] != NULL) 
+                        {
+                            strcat(resultString, row[0]); 
+                            strcat(resultString, " "); 
+                        }
+                        mysql_free_result(result);
+                    }
+                }
+            }
+            
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /*建立私聊的联系*/
 int chatRoomPrivateChat(chatRoomMessage *Message, json_object *obj) /*建立一个联系只有双方能够聊天*/ /*判断其书否在线， 是否存在这个好友*/
 { 
