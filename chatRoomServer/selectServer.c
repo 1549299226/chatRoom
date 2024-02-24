@@ -605,6 +605,7 @@ void* handleClient(void* arg)
                             if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
                             {
                                 
+                                
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 continue;
                             }                    
