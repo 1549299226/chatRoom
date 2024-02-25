@@ -846,6 +846,29 @@ int main()
             else if (!strncmp(flag, "3", sizeof(flag)))//删除好友
             {
                 //删除好友
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                printf("%s\n", recvBuffer)
+                printf("输入你想要删除的好友\n");
+                scanf("%s", sendBuffer);
+                send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                memset(sendBuffer, 0, sizeof(sendBuffer));
+                recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                if (!strncmp(recvBuffer, "他不是你的好友", sizeof(recvBuffer)))
+                {
+                    printf("他不是你的好友");
+                    continue;
+                }
+                else if (!strncmp(recvBuffer, "他是你的好友", sizeof(recvBuffer)))
+                {
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                    
+                    recv(sockfd,recvBuffer, sizeof(recvBuffer), 0);
+                    printf("%s", recvBuffer);
+                    continue;
+
+                }
+                
+                
                 
             }
             else if (!strncmp(flag, "6", sizeof(flag)))//退出登录
