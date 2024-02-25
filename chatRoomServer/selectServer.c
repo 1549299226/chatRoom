@@ -607,11 +607,11 @@ void* handleClient(void* arg)
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
                                 recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                                 // groupChatInfo->groupChatName = recvBuffer;
-                                strncpy(groupChatInfo->groupChatName, recvBuffer, sizeof(groupChatInfo->groupChatName));
+                                //strncpy(groupChatInfo->groupChatName, recvBuffer, sizeof(groupChatInfo->groupChatName));
                                 /*遍历表中的成员名*/
                                 char *resultString = (char *)malloc(sizeof(BUFFER_SIZE));
                                 memset(resultString, 0, sizeof(resultString));
-                                int result = iterateTableAndReturnString(resultString, conn, groupChatInfo);
+                                int result = iterateTableAndReturnString(resultString, conn, recvBuffer);
                                 printf("%d\n", result);
                                 if (result != 0) 
                                 {
@@ -713,14 +713,20 @@ void* handleClient(void* arg)
 
                                 while (1)
                                 {
-                                    
+                                    /*群名*/
+                                    char  groupChatName [NAMESIZE];
+                                    memset(groupChatName, 0, sizeof(groupChatName));
+
 
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
                                     strncpy(sendBuffer, "请选择1、步骤一填写群名2、退出返回上一级", sizeof(sendBuffer));
                                     send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                     memset(sendBuffer, 0, sizeof(sendBuffer));
 
+                                    
+
                                     memset(recvBuffer, 0, sizeof(recvBuffer));
+
                                     ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                                     if (ret == 0)
                                     {
@@ -734,13 +740,14 @@ void* handleClient(void* arg)
                                     {
                                         memset(recvBuffer, 0, sizeof(recvBuffer));
                                         recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                        strncpy(groupChatName, recvBuffer, sizeof(groupChatName));
                                         /*创建群名 成功返回1 失败返回0*/
                                         ret = createGroupName(recvBuffer, conn, Message);
                                         
                                         /*创建群名成功*/
                                         if (ret == 1)
                                         {
-                                            strncpy(groupChatInfo->groupChatName, recvBuffer, sizeof(groupChatInfo->groupChatName));
+                                            //strncpy(groupChatInfo->groupChatName, recvBuffer, sizeof(groupChatInfo->groupChatName));
                                             memset(recvBuffer, 0, sizeof(recvBuffer));
                                             char group_buffer[BUFFER_SIZE];
                                             memset(group_buffer, 0, sizeof(group_buffer));
@@ -768,10 +775,9 @@ void* handleClient(void* arg)
                                             
                                             /*查找该人员昵称是否为你的好友*/
                                             if ((!chatRoomSelect(client, node)) && 
-                                            pullGroupMembers(conn, node->name, Message, groupChatInfo))
+                                            pullGroupMembers(conn, node->name, Message, groupChatName))
                                             {
-                                                groupChatInfo->membersName = node->name;
-                                                printf("成员名%s\n", groupChatInfo->membersName);
+                                                printf("成员名%s\n", node->name);
                                                 memset(sendBuffer, 0, sizeof(sendBuffer));
                                                 strncpy(sendBuffer, "他是你的好友,入群成功", sizeof(recvBuffer));
                                                 send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);

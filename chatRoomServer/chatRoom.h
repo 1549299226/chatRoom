@@ -117,10 +117,11 @@ int createGroupName(char *groupChatName, MYSQL *conn, chatRoomMessage * Message)
 int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_travel);
 
 /*拉取群成员*/
-int pullGroupMembers(MYSQL *conn, char * memberName, chatRoomMessage * Message, groupChat * groupChatInfo);
+int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, char * groupChatName);
+
 
 /*遍历表中的成员名*/
-int iterateTableAndReturnString(char * resultString, MYSQL *conn, groupChat * groupChatInfo);
+int iterateTableAndReturnString(char * resultString, MYSQL *conn, char * groupChatName);
 
 /*删除好友的销毁信息*/
 int chatRoomDestroy(chatRoomMessage * Message, json_object * obj, Friend * Info, MYSQL * conn);       /*通过传进来的信息，把数据库中你的好友表中的指定人员信息删除，同时删掉内存中的该信息，释放该内存*/

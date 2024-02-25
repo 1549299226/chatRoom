@@ -29,7 +29,7 @@
 #define DBNAME "chatRoom"
 
 
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 1024
 #define BUFFER_SIZE_M 256
 #define MAX_ONLINE 50
 
@@ -935,43 +935,172 @@ int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_trave
 }
 
 /*拉取群成员*/
-int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, groupChat * groupChatInfo)
-{
 
-    char insertBuffer[BUFFER_SIZE_M];
+int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, char * groupChatName)
+{
+    int ret = 0;
+    MYSQL_RES *res;
+    MYSQL_ROW row;
+    char insertBuffer[BUFFER_SIZE];
     memset(insertBuffer, 0, sizeof(insertBuffer));
+    char newTableName[BUFFER_SIZE_M];
+    memset(newTableName, 0, sizeof(newTableName));
+
+    char nbuffer[BUFFER_SIZE_M];
+    memset(nbuffer, 0, sizeof(nbuffer));
+
+    // 创建群聊表
     sprintf(insertBuffer, "CREATE TABLE IF NOT EXISTS `%s` ("
-        "memberName VARCHAR(50) PRIMARY KEY,"  "groupChatTime DATETIME, "
-    "groupChatContent TEXT)", groupChatInfo->groupChatName);
+        "memberName VARCHAR(50) PRIMARY KEY)", groupChatName);
     
     if (mysql_query(conn, insertBuffer)) 
     {
-        printf("系统错误，创表失败: %s\n", mysql_error(conn));
-        exit(-1);
-    }
-
-    memset(insertBuffer, 0, sizeof(insertBuffer));
-    sprintf(insertBuffer, "INSERT INTO `%s` (memberName) VALUES "
-    "('%s')",
-    groupChatInfo->groupChatName, memberName);
-    // 执行插入操作
-    if (mysql_query(conn, insertBuffer)) 
-    {
-        fprintf(stderr, "%s\n", mysql_error(conn));
-        mysql_close(conn);
-        
+        fprintf(stderr, "系统错误，创表失败: %s\n", mysql_error(conn));
         return -1;
     }
 
-    return 1;
+    // 插入成员到群聊表
+    memset(insertBuffer, 0, sizeof(insertBuffer));
+    sprintf(insertBuffer, "INSERT INTO `%s` (memberName) VALUES ('%s')", groupChatName, memberName);
+    if (mysql_query(conn, insertBuffer)) 
+    {
+        fprintf(stderr, "%s\n", mysql_error(conn));
+        return -1;
+    }
+
+    // 获取成员账号并创建群聊表
+    memset(insertBuffer, 0, sizeof(insertBuffer));
+    sprintf(insertBuffer, "SELECT accountNumber FROM Friend%s WHERE name = '%s'",Message->accountNumber, memberName);
+    if (mysql_query(conn, insertBuffer)) 
+    {
+        fprintf(stderr, "%s\n", mysql_error(conn));
+        return -1;
+    }
+
+
+    res = mysql_use_result(conn);
+    
+    while ((row = mysql_fetch_row(res)) != NULL)
+    {
+        if (row != NULL) 
+        {
+            char *accountNumber = row[0];
+            sprintf(newTableName, "groupChat%s", accountNumber);
+            printf("989---friengacc:%s\n", newTableName);
+
+        } 
+        else 
+        {
+            
+            printf("No account found for %s\n", memberName);
+            return -1;
+        }
+    }
+    mysql_free_result(res);
+
+    memset(nbuffer, 0, sizeof(nbuffer));
+    strncpy(nbuffer, newTableName, sizeof(nbuffer));
+
+    char createTableQery[BUFFER_SIZE];
+    memset(createTableQery, 0, sizeof(createTableQery));
+    snprintf(createTableQery, sizeof(createTableQery), "CREATE TABLE IF NOT EXISTS `%s` ("
+        "groupChatName VARCHAR(50) PRIMARY KEY)", nbuffer);
+     printf("1001---friengacc:%s\n", nbuffer);
+    if (mysql_query(conn, createTableQery)) 
+    {
+        fprintf(stderr, "%s\n", mysql_error(conn));
+        return -1;
+    }
+
+    printf("Table %s created successfully.\n", nbuffer);
+
+
+    // 检查群名是否已存在
+    
+    memset(nbuffer, 0, sizeof(nbuffer));
+    strncpy(nbuffer, newTableName, sizeof(nbuffer));
+    memset(insertBuffer, 0, sizeof(insertBuffer));
+    printf("1015---%s\n", nbuffer);
+    snprintf(insertBuffer, sizeof(insertBuffer), "SELECT * FROM %s WHERE groupChatName = '%s'", nbuffer, groupChatName);
+    printf("1014---newTableName: %s\n", newTableName);
+    
+    ret = mysql_query(conn, insertBuffer);
+    if (ret < 0) 
+    {
+        fprintf(stderr, "系统错误，查询群名失败: %s\n", mysql_error(conn));
+        return -1;
+    }
+    else if (ret == 0)
+    {
+        /*该成员没有该群名 ，加入该群*/
+        memset(insertBuffer, 0, sizeof(insertBuffer));
+        memset(nbuffer, 0, sizeof(nbuffer));
+        strncpy(nbuffer, newTableName, sizeof(nbuffer));
+        sprintf(insertBuffer, "INSERT INTO `%s` (groupChatName) VALUES ('%s')", nbuffer, groupChatName);
+        printf("1025--%s\n", nbuffer);
+
+        if (mysql_query(conn, insertBuffer)) 
+        {
+            fprintf(stderr, "系统错误，插入数据失败: %s\n", mysql_error(conn));
+            return -1;
+        }
+        // 添加以下代码来清除未读取的结果
+        while (mysql_next_result(conn) == 0) 
+        {
+            if (res = mysql_store_result(conn)) 
+            {
+                mysql_free_result(res);
+            }
+        }
+        // 显式关闭结果集
+        mysql_free_result(mysql_store_result(conn));
+
+        // 提交事务（如果需要）
+        if (mysql_commit(conn) != 0) 
+        {
+            fprintf(stderr, "提交事务失败: %s\n", mysql_error(conn));
+            return -1;
+        }
+    }
+    else if (ret > 0)
+    {
+        /*该成员已在该群*/
+        printf("1036--\n");
+        return -2; 
+
+    }
+    // res = mysql_store_result(conn);
+    // int num_rows = mysql_num_rows(res);
+    // mysql_free_result(res);
+
+    // if (num_rows > 0) 
+    // {
+    //     printf("群名已存在，请输入其他名称。\n");
+    //     ret = 0; // 返回 0 表示创建群名失败
+    // } 
+    // else 
+    // {
+    //     memset(insertBuffer, 0, sizeof(insertBuffer));
+    //     sprintf(insertBuffer, "INSERT INTO `%s` (groupChatName) VALUES ('%s')", newTableName, groupChatName);
+    //     if (mysql_query(conn, insertBuffer)) 
+    //     {
+    //         fprintf(stderr, "系统错误，插入数据失败: %s\n", mysql_error(conn));
+    //         return -1;
+    //     }
+        
+    //     ret = 1;
+    // }
+
+    return ret;
 }
 
+
 /*遍历表中的成员名*/
-int iterateTableAndReturnString(char * resultString, MYSQL *conn, groupChat * groupChatInfo)
+int iterateTableAndReturnString(char * resultString, MYSQL *conn, char * groupChatName)
 {
     char buffer[BUFFER_SIZE_M];
     memset(buffer, 0, sizeof(buffer));
-    sprintf(buffer, "SELECT COUNT(*) FROM %s", groupChatInfo->groupChatName);
+    sprintf(buffer, "SELECT COUNT(*) FROM %s", groupChatName);
     if (mysql_query(conn, buffer) == 0) 
     {
         MYSQL_RES *result = mysql_store_result(conn);
@@ -986,7 +1115,7 @@ int iterateTableAndReturnString(char * resultString, MYSQL *conn, groupChat * gr
             
             for (int n = 0; n < rowCount; n++) 
             {
-                sprintf(buffer, "SELECT memberName FROM %s LIMIT %d, 1", groupChatInfo->groupChatName, n);
+                sprintf(buffer, "SELECT memberName FROM %s LIMIT %d, 1", groupChatName, n);
                 if (mysql_query(conn, buffer) == 0) 
                 {
                     result = mysql_store_result(conn);
