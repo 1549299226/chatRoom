@@ -656,11 +656,10 @@ void* handleClient(void* arg)
                                     mysql_free_result(res);  // 释放查询结果集
                                 }
                             }
-                            printf("635----buffer:%s\n", buffer);
+
 
                             /*自己的名字*/
                             send(acceptfd, buffer, sizeof(buffer), 0);
-                            printf("buffer:%s\n",buffer);
                             
                             memset(buffer, 0, sizeof(buffer));
                             /*发送消息给好友*/ 
@@ -675,6 +674,8 @@ void* handleClient(void* arg)
                                     if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
                                     {
                                         printf("677 --服务端的读已关闭\n");
+                                        send(ret, recvBuffer, sizeof(recvBuffer), 0);
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
                                         break;
                                     }
                                     
@@ -699,7 +700,7 @@ void* handleClient(void* arg)
                             continue;
                         }
                     }
-                }   
+            }   
             else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
             {
                 //删除好友
