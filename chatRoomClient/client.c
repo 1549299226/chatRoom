@@ -104,6 +104,13 @@ void * private_chat(void * arg)
             perror("recv");
             break;
         }
+        if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
+        {
+            memset(recvBuffer, 0, sizeof(recvBuffer));
+            printf("关闭客户端的读\n");
+            break;
+        }
+        
         //printf("105 recvBuffer:%s\n", recvBuffer);
         if (chatRoomObjAnalyzeContent(recvBuffer, closedChat, obj))
         {
@@ -544,16 +551,11 @@ int main()
                                     memset(recvBuffer, 0, sizeof(recvBuffer));
                                     recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                     strncpy(friendMessage->myName, recvBuffer, NAMESIZE); 
-                                    // printf("482----friendMessage->myName:%s\n", friendMessage->myName);
-                                    // printf("482----recvBuffer:%s\n", recvBuffer);
                                     
-                                    int shouldExit = 0;
-                                    // signal(SIGINT, SIG_IGN);
-                                    // signal(SIGINT, exitChat);
                                     char buffer[BUFFER_SIZE];
                                     memset(buffer, 0, sizeof(buffer));
                                     pthread_create(&tid_oto, 0, private_chat, (void *)&oto);
-                                    while (!shouldExit)
+                                    while (1)
                                     {
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         memset(buffer, 0, sizeof(buffer));
@@ -567,17 +569,14 @@ int main()
                                             printf("聊天结构体转json失败\n");
                                             break;
                                         }
-                                        // printf("560---sendBuffer:%s\n", sendBuffer);
-                                        // printf("???????????????\n");
-                                        
-
-                                        
+                            
                                         
                                         if (strlen(sendBuffer) == 1 && sendBuffer[0] == 27)
                                         {
                                             printf("客户端的写已关闭\n");
                                             oto.otoBuffer = 0;
                                             send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
+                                            memset(sendBuffer, 0, sizeof(sendBuffer));
                                             break;
                                         }
                                         if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
@@ -587,19 +586,17 @@ int main()
                                     
                                         }
                                         printf("585--长度:%ld\n", strlen(sendBuffer));
-                                        // printf("发送成功\n");
-                                        // printf("533--读:%s\n",recvBuffer);
-                                        // printf("539--聊天内容：%s\n",closedChat->content);
-                                       
                                     }
                                     
-                                                                            
+                                    break;                                       
                                 }
 
                                 if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
                                 {
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    
                                     printf("此时好友不在线, 设计为不通信，返回上一级\n");
-                                    continue;
+                                    break;
                                 }
                                 
                                 
@@ -608,7 +605,7 @@ int main()
                             else
                             {
                                 printf("他不是你的好友， 返回上一级\n");
-                                continue;
+                                break;
 
                             }
                             
@@ -617,7 +614,6 @@ int main()
                         else if (!strncmp(flag, "2", sizeof(flag)))
                         {
                             memset(flag, 0, sizeof(flag));
-                            mainInterface();
                             break;
                         }
                         else 
@@ -637,6 +633,7 @@ int main()
             else if (!strncmp(flag, "3", sizeof(flag)))
             {
                 //删除好友
+                
             }
             else if (!strncmp(flag, "6", sizeof(flag)))
             {
