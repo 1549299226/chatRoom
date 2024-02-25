@@ -731,6 +731,7 @@ int getAsciiSum(const char *name)
     return sum;
 }
 
+
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 {
@@ -1729,3 +1730,14 @@ int chatRoomSelect(Friend *client,  ELEMENTTYPE data)
     return 0;
 }
 
+
+int logOut( HashTable *pHashtable  , chatRoomMessage * Message, Friend * client, int acceptfd)
+{
+    int ret = 0;
+    int delete_name = getAsciiSum(Message->name);
+    hashTableDelAppointKey(pHashtable, delete_name);/*删除在线列表中该用户的信息*/
+    balanceBinarySearchTreeDestroy(client);
+    printf("客户端%d退出\n", acceptfd);
+    
+    return ret;
+}

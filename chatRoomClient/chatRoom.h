@@ -34,7 +34,7 @@ typedef struct groupChat
 {
     char * groupChatName;//群名
     char * membersName;//群成员名字
-    time_t * groupChatTime; //群聊天时间
+    time_t groupChatTime; //群聊天时间
     char * groupChatContent;//群聊记录
 }groupChat;
 
@@ -129,7 +129,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
 
 /* 退出登录时的资源回收 */
-void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) ;
+void logoutCleanup(Friend * client, Friend* online, Friend * Info, chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node, groupChat * groupChatInfo) ;
 
 /*将json字符串转化成chatHash结构体*/
 int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);

@@ -166,7 +166,7 @@ int chatRoomInit(chatRoomMessage **Message, groupChat ** groupChatInfo, chatCont
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
     // 创建一个json对象
     *obj = (json_object*)malloc(sizeof(json_object*)); 
@@ -1301,11 +1301,10 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     return 0;
 }
 
-/* 释放聊天室和好友消息结构体的内存 */
-static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) ;
-
-/* 释放聊天室和好友消息结构体的内存 */
-static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) 
+// 释放聊天室消息结构体
+static void freeChatRoomMessage(chatRoomMessage *Message) ;
+// 释放聊天室消息结构体
+static void freeChatRoomMessage(chatRoomMessage *Message) 
 {
     if (Message != NULL) {
         free(Message->name);
@@ -1313,32 +1312,123 @@ static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage)
         free(Message->mail);
         free(Message->password);
         free(Message);
-    }
-    if (friendMessage != NULL) {
-        free(friendMessage->friendName);
-        free(friendMessage->myName);
-        free(friendMessage->content);
-        free(friendMessage);
+        // Message->name = NULL;
+        // Message->accountNumber = NULL;
+        // Message->mail = NULL;
+        // Message->password = NULL;
+        // Message = NULL;
+
+
     }
 }
 
-/* 关闭数据库连接并释放资源 */
-static void closeDatabase(MYSQL *conn) ;
+// 释放聊天内容结构体
+static void freeChatContent(chatContent *content) ;
 
-static void closeDatabase(MYSQL *conn) 
+static void freeChatContent(chatContent *content) 
 {
-    if (conn != NULL) {
+    if (content != NULL) 
+    {
+        free(content->friendName);
+        free(content->myName);
+        free(content->content);
+        free(content);
+        // content->friendName = NULL;
+        // content->myName = NULL;
+        // content->content = NULL;
+        // content = NULL;
+
+
+    }
+}
+
+// 释放群聊结构体
+static void freeGroupChat(groupChat *group) ;
+static void freeGroupChat(groupChat *group) 
+{
+    if (group != NULL) 
+    {
+        free(group->groupChatName);
+        free(group->membersName);
+        free(group->groupChatContent);
+        free(group);
+        // group->groupChatName = NULL;
+        // group->membersName = NULL;
+        // group->groupChatContent = NULL;
+        // group = NULL;
+    }
+}
+
+
+// 释放JSON对象
+static void freeJsonObj(json_object *obj);
+static void freeJsonObj(json_object *obj) 
+{
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+        free(obj);
+       // obj = NULL;
+    }
+}
+
+// 释放好友列表结点
+static void freeFriendNode(friendNode *node) ;
+static void freeFriendNode(friendNode *node) 
+{
+    if (node != NULL) 
+    {
+        freeChatRoomMessage(node->data);
+        free(node);
+        //node = NULL;
+    }
+}
+
+// 释放好友列表
+static void freeFriendList(Friend *list); 
+
+static void freeFriendList(Friend *list) 
+{
+    if (list != NULL) 
+    {
+        balanceBinarySearchTreeDestroy(list);
+    }
+}
+
+// 关闭数据库连接
+static void closeDBConnection(MYSQL *conn) ;
+
+static void closeDBConnection(MYSQL *conn) 
+{
+    if (conn != NULL) 
+    {
         mysql_close(conn);
+        //conn = NULL;
     }
 }
 
 /* 退出登录时的资源回收 */
-void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) 
+void logoutCleanup(Friend * client, Friend* online, Friend * Info, chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node, groupChat * groupChatInfo) 
 {
-    freeMemory(Message, friendMessage);  // 释放内存
-    json_object_put(obj);  // 释放 JSON 对象
-    closeDatabase(conn);   // 关闭数据库连接
-    free(node);            // 释放好友节点的内存
+   
+    // 释放好友列表
+    freeFriendList(client);
+    // 释放好友列表结点
+    //freeFriendNode(node);
+    // 释放JSON对象
+    //freeJsonObj(obj);
+    // obj = NULL;
+    // 释放群聊结构体
+    freeGroupChat(groupChatInfo);
+    // 释放聊天内容结构体
+    freeChatContent(friendMessage);
+    // 释放聊天室消息结构体
+    freeChatRoomMessage(Message);
+    freeFriendList(online);
+    freeFriendList(Info);
+    // 关闭数据库连接
+    //closeDBConnection(conn);
+
 }
 
 /*将json格式的字符串转换成原来onlineHash*/

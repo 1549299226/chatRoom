@@ -72,10 +72,13 @@ int printStruct(void *arg)
 
 void * private_chat(void * arg)
 {
+    /*将当前线程标记为可被分离的状态，这样当线程结束时，其资源将会被自动释放*/
     pthread_detach(pthread_self());
+    /*从 arg 指向的结构体中获取 sockfd 的值，并将其赋给整型变量 sockfd*/
     int sockfd = ((chatOTO *)arg)->sockfd;
     char recvBuffer[BUFFER_SIZE];
     memset(recvBuffer, 0, sizeof(recvBuffer));
+    /*初始化聊天结构体*/
     chatContent * closedChat = (chatContent *)malloc(sizeof(chatContent));
     memset(closedChat, 0, sizeof(chatContent));
     closedChat->content = (char *)malloc(BUFFER_SIZE);
@@ -89,6 +92,7 @@ void * private_chat(void * arg)
     
     json_object * obj = NULL;
     char *dateStr = (char *)malloc(TIME_SIZE);
+    // 进入一个循环，不断接收套接字 sockfd 中的消息，并处理这些消息
     while (((chatOTO *)arg)->otoBuffer == 1)
     {
         
@@ -128,7 +132,8 @@ void * private_chat(void * arg)
         /*自定义时间的表示*/
         strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
         printf("friendname:%s, time:%s \n %s\n", closedChat->myName, formattedTime, closedChat->content);
-        
+        //free(dateStr);
+
          
     }
     pthread_exit(NULL);
@@ -469,7 +474,7 @@ int main()
 
                 while (1)
                 {
-                    system("clear");
+                    //system("clear");
 
                     /*读取选项*/
                     /*请选择1、群聊 2、私聊 3、返回上一级*/
@@ -693,7 +698,7 @@ int main()
                             {
                                 memset(flag, 0, sizeof(flag));
                                 printf("无效的输入请重新输入\n");
-                                sleep(2);
+                                sleep(1);
                                 continue;
                             }
 
@@ -703,7 +708,6 @@ int main()
  
                 }
                 /*私聊*/
-                   /*私聊*/
                 else if (!strncmp(flag, "2", sizeof(flag)))
                 {
                     memset(flag, 0, sizeof(flag));
@@ -725,6 +729,7 @@ int main()
                     
                     while (1)
                     {
+                        
                         printf("1、输入私聊对象的名字进行聊天\n");
                         printf("2、退出返回上一界面\n");
                         scanf("%s", flag);
@@ -747,7 +752,7 @@ int main()
 #if 1 
                                 /*清空缓冲区*/
                                 memset(recvBuffer, 0, sizeof(recvBuffer));
-                                    /*接收好友是否在线的信息*/
+                                /*接收好友是否在线的信息*/
                                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                                 
                                 chatOTO oto;
@@ -799,8 +804,24 @@ int main()
                                         }
                                         printf("585--长度:%ld\n", strlen(sendBuffer));
                                     }
-                                    
-                                    break;                                       
+                                    printf("807---\n");
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    printf("%s\n", recvBuffer);
+                                    memset(flag, 0, sizeof(flag));
+                                    scanf("%s", flag);
+                                    send(sockfd, flag, sizeof(flag), 0);
+
+                                    if (!strncmp(flag, "1", sizeof(flag)))
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+                                        continue;
+                                    }
                                 }
 
                                 if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
@@ -811,14 +832,17 @@ int main()
                                     break;
                                 }
                                 
-                                
+                            
 #endif
                             }
-                            else
+                            else if(!strncmp(recvBuffer, "他不是你的好友， 返回", sizeof(recvBuffer)))
                             {
-                                printf("他不是你的好友， 返回上一级\n");
-                                break;
+                                
+                                printf("%s\n", recvBuffer);
+                                
+                                memset(recvBuffer, 0, sizeof(sendBuffer));
 
+                                continue;
                             }
                             
 
@@ -840,6 +864,15 @@ int main()
 
                 }
 
+                else if (!strncmp(flag, "3", sizeof(flag)))
+                {
+                    break;
+                }
+                else
+                {
+                    printf("输入有误，重新输入\n");
+                    continue;
+                }
                 }
             }
 
@@ -853,19 +886,38 @@ int main()
 
                 //退出登录
                 memset(flag, 0, sizeof(flag));
- 
-                
+                memset(recvBuffer, 0, sizeof(recvBuffer));
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 printf("%s\n", recvBuffer);
-                sleep(3);
-                memset(recvBuffer, 0, sizeof(recvBuffer));
                 
-                logoutCleanup(Message, friendMessage, obj, conn, node);
-                free(flag);
-                quitChatInterface();//进入退出界面
+                scanf("%s", flag);
+                send(sockfd, flag, sizeof(flag), 0);
+                while (1)
+                {
 
-                break;
-
+                    if (!strncmp(flag, "1", sizeof(flag)))
+                    {
+                        memset(flag, 0, sizeof(flag));
+                        /*退出登录时的资源回收*/
+                       //logoutCleanup (client, online, Info,  Message, friendMessage, obj, conn, node, groupChatInfo);
+                        //free(flag);
+                        close(sockfd);
+                        //quitChatInterface();//进入退出界面
+                        
+                        return 0;
+                    }
+                    else if (!strncmp(flag, "2", sizeof(flag)))
+                    {
+                        memset(flag, 0, sizeof(flag));
+                        break;
+                    }
+                    else
+                    {
+                        memset(flag, 0, sizeof(flag));
+                        printf("输入有误，请重新选择\n");
+                        continue;
+                    }
+                }
 
             }
             else if (!strncmp(flag, "X", sizeof(flag)))//注销登录

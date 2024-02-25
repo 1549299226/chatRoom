@@ -176,4 +176,8 @@ int chatRoomSelect(Friend *client,  ELEMENTTYPE data);
 
 /*字符串转整型*/
 int getAsciiSum(const char *name); 
+
+int logOut(HashTable *pHashtable  , chatRoomMessage * Message, Friend * client, int acceptfd);
+
+
 #endif
