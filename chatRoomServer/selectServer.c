@@ -591,7 +591,7 @@ void* handleClient(void* arg)
                         chatRoomMessage * node = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
                         node->name = (char *)malloc(NAMESIZE);
                         strncpy(node->name, recvBuffer, NAMESIZE);
-                        printf("540---%s---name:%s--\n", recvBuffer,node->name);
+                        
                         
                         /*查找该人员昵称是否为你的好友*/
                         if (!chatRoomSelect(client, node))
@@ -602,14 +602,13 @@ void* handleClient(void* arg)
                         }
                     }
                     
-                    printf("587---recvBuffer:%s\n", recvBuffer);
+                    
                     char friendName[NAMESIZE];
                     memset(friendName, 0, NAMESIZE);
                     strncpy(friendName, recvBuffer, NAMESIZE);
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     /*判断好友是否在线 在线返回好友套接字fd */
                     int ret = searchFriendIfOnline(hashHandle->onlineTable, friendName);
-                        printf("594--ret:%d\n", ret);
                         memset(recvBuffer, 0, sizeof(recvBuffer));
                         if (ret > 0)   /*此时好友在线*/
                         {
@@ -620,11 +619,11 @@ void* handleClient(void* arg)
                            
                             memset(buffer, 0, sizeof(buffer));
                             recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                            printf("605----recvBuffer:%s\n", recvBuffer);
+
                             char myAccountNumber[NAMESIZE];
                             memset(myAccountNumber, 0, ACCOUNTNUMBER);
                             strncpy(myAccountNumber, recvBuffer, ACCOUNTNUMBER);
-                            printf("609----myAccountNumber:%s\n", myAccountNumber);
+
 
                             chatOTO *oto = (chatOTO *)malloc(sizeof(chatOTO));
                             memset(oto, 0, sizeof(chatOTO));
@@ -704,6 +703,78 @@ void* handleClient(void* arg)
             else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
             {
                 //删除好友
+                int ret = 0;
+                char buffer[BUFFER_SIZE];
+                balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
+                printf("527--- %s\n", buffer);
+                send(acceptfd, buffer, sizeof(buffer), 0);
+                memset(buffer, 0, sizeof(buffer));
+                char fname[NAMESIZE];
+                memset(fname, 0, sizeof(fname));
+                /*读到要删除好友的名字*/
+                recv(acceptfd, fname, sizeof(fname), 0);
+                printf("name:%s\n", fname);
+                printf("accountNumber:%s\n", Message->accountNumber);
+                snprintf(buffer, sizeof(buffer), "SELECT name from Friend%s WHERE name = '%s'", Message->accountNumber, fname);
+                if (ret = mysql_query(conn, buffer) < 0) 
+                {
+                    printf("数据库错误\n");    
+                    exit(-1);
+                }
+                else if (ret == 0)
+                {
+                    strncpy(sendBuffer, "他不是你的好友", sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                }
+                else        /*需要加一个将查询出的结果放到数组中，再放入好友数据库中*/
+                {
+                    strncpy(sendBuffer, "他是你的好友", sizeof(sendBuffer));
+                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    memset(sendBuffer, 0, sizeof(sendBuffer));
+                    chatRoomMessage * fMessage = (chatRoomMessage *)malloc(sizeof(chatRoomMessage));
+                    memset(fMessage, 0, sizeof(chatRoomMessage));
+                    fMessage->accountNumber = (char *)malloc(ACCOUNTNUMBER);
+                    memset(fMessage->accountNumber, 0, ACCOUNTNUMBER);
+                    fMessage->name = (char *)malloc(NAMESIZE);
+                    memset(fMessage->name, 0, NAMESIZE);
+
+                    strncpy(fMessage->name, fname, sizeof(fname));
+
+                    
+                    MYSQL_RES *res = mysql_use_result(conn);
+                    memset(buffer, 0, sizeof(buffer));
+                    if (res != NULL) 
+                    {
+                        MYSQL_ROW row;
+                        if ((row = mysql_fetch_row(res)) != NULL) 
+                        {
+                            
+                            snprintf(buffer, sizeof(buffer), "%s", row[0]);
+                            printf("628----buffer:%s\n", buffer);
+
+
+                        }
+                        mysql_free_result(res);  // 释放查询结果集
+                    }
+                    snprintf(buffer, sizeof(buffer), "DELETE FROM Friend%s WHERE name = '%s'", Message->accountNumber, fname);
+                    if (!mysql_query(conn, buffer)) 
+                    {
+                        printf("数据库错误\n");    
+                        exit(-1);
+                    }
+                    else
+                    {
+                        node->data = fMessage;
+                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                        balanceBinarySearchTreeDelete(client, fMessage);
+                        strncpy(sendBuffer, "删除好友成功", sizeof(sendBuffer));
+                        send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    }
+
+                }
+                
+
             }
             else if (!strncmp(recvBuffer, "6", sizeof(recvBuffer)))
             {
