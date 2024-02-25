@@ -73,6 +73,11 @@ typedef struct fdHash
     int sockfd;
 }fdHash;
 
+typedef struct chatOTO
+{
+    int acceptfd;
+    int sockfd;
+}chatOTO;
 //哈希的比较函数
 int compareFunc(void *val1, void *val2);
 
