@@ -29,6 +29,15 @@ typedef struct chatContent
     char * content;     //聊天内容
     time_t  chatTime;        //聊天时间
 }  chatContent;
+
+typedef struct groupChat
+{
+    char * groupChatName;//群名
+    char * membersName;//群成员名字
+    time_t * groupChatTime; //群聊天时间
+    char * groupChatContent;//群聊记录
+}groupChat;
+
 // enum SELECT
 // {
 //     BUILT = 1,
@@ -66,7 +75,7 @@ int existenceOrNot(void *arg1, void *arg2);
 
 
 /*初始化聊天室*/
-int chatRoomInit(chatRoomMessage ** Message, chatContent **friendMessage, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
+int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatContent **friendMessage, json_object ** obj, Friend * Info, Friend *client, Friend * online, MYSQL ** conn, int (*compareFunc)(ELEMENTTYPE val1, ELEMENTTYPE val2), int (*printFunc)(ELEMENTTYPE val), friendNode * node);    /*先这些后面再加*/
 
 /*注册账号*/
 int chatRoomInsert(char *buffer, chatRoomMessage * Message, json_object * obj, MYSQL * conn); /*账号不能跟数据库中的有重复，昵称也是不可重复，通过账号算出一个key（用一个静态函数来计算），这个key便是ID是唯一的，密码要包含大写及特殊字符，最少八位，不然密码不符合条件，将注册好的信息放到数据库中*/
