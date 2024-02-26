@@ -1032,6 +1032,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     }
     else if (ret == 0)
     {
+        mysql_free_result(mysql_store_result(conn));
         /*该成员没有该群名 ，加入该群*/
         memset(insertBuffer, 0, sizeof(insertBuffer));
         memset(nbuffer, 0, sizeof(nbuffer));
@@ -1044,27 +1045,11 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
             fprintf(stderr, "系统错误，插入数据失败: %s\n", mysql_error(conn));
             return -1;
         }
-        // 添加以下代码来清除未读取的结果
-        while (mysql_next_result(conn) == 0) 
-        {
-            if (res = mysql_store_result(conn)) 
-            {
-                mysql_free_result(res);
-            }
-        }
-        // 显式关闭结果集
-        mysql_free_result(mysql_store_result(conn));
-
-        // 提交事务（如果需要）
-        if (mysql_commit(conn) != 0) 
-        {
-            fprintf(stderr, "提交事务失败: %s\n", mysql_error(conn));
-            return -1;
-        }
     }
     else if (ret > 0)
     {
         /*该成员已在该群*/
+        mysql_free_result(mysql_store_result(conn));
         printf("1036--\n");
         return -2; 
 
@@ -1091,7 +1076,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     //     ret = 1;
     // }
 
-    return ret;
+    return 0;
 }
 
 
