@@ -719,14 +719,21 @@ void* handleClient(void* arg)
                                         memset(recvBuffer, 0, sizeof(recvBuffer));
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         printf("696 --该读\n");
-                                        
-                                        if (recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0) >= 0)
+                                        ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                        if (ret == 0)
+                                        {
+                                            printf("客户端%d异常关闭\n", acceptfd);
+                                            /*调用退出登录代码 to do*/
+                                            close(acceptfd);
+                                            return NULL;
+                                        }
+                                        if (ret > 0)
                                         {
                                             for (int idx = 0; idx < count_fd; idx++)
                                             {
                                                 send(online_fd[idx], recvBuffer, sizeof(recvBuffer), 0);
                                                 
-                                                // printf("707---online_fd[%d]:%d\n", count_fd, online_fd[idx]);
+                                               
                                                 
                                             }
                                             if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
