@@ -48,9 +48,9 @@ enum CHOIVE
 
 int compareFunc(void *val1, void *val2)
 {
-    printf("50-----------------\n");
+   
     hashNode *key1 = (hashNode *)val1;
-    printf("52-----------------\n");
+ 
 
     hashNode *key2 = (hashNode *)val2;
     printf("key1->real_key:%d, key2->real_key:%d\n", key1->real_key, key2->real_key);
@@ -196,7 +196,7 @@ int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatCon
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
 
     // 创建一个json对象
@@ -731,6 +731,7 @@ int getAsciiSum(const char *name)
     return sum;
 }
 
+
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
 {
@@ -986,7 +987,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
         {
             char *accountNumber = row[0];
             sprintf(newTableName, "groupChat%s", accountNumber);
-            printf("989---friengacc:%s\n", newTableName);
+           
 
         } 
         else 
@@ -1005,7 +1006,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     memset(createTableQery, 0, sizeof(createTableQery));
     snprintf(createTableQery, sizeof(createTableQery), "CREATE TABLE IF NOT EXISTS `%s` ("
         "groupChatName VARCHAR(50) PRIMARY KEY)", nbuffer);
-     printf("1001---friengacc:%s\n", nbuffer);
+
     if (mysql_query(conn, createTableQery)) 
     {
         fprintf(stderr, "%s\n", mysql_error(conn));
@@ -1020,9 +1021,9 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     memset(nbuffer, 0, sizeof(nbuffer));
     strncpy(nbuffer, newTableName, sizeof(nbuffer));
     memset(insertBuffer, 0, sizeof(insertBuffer));
-    printf("1015---%s\n", nbuffer);
+
     snprintf(insertBuffer, sizeof(insertBuffer), "SELECT * FROM %s WHERE groupChatName = '%s'", nbuffer, groupChatName);
-    printf("1014---newTableName: %s\n", newTableName);
+   
     
     ret = mysql_query(conn, insertBuffer);
     if (ret < 0) 
@@ -1032,40 +1033,25 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     }
     else if (ret == 0)
     {
+        mysql_free_result(mysql_store_result(conn));
         /*该成员没有该群名 ，加入该群*/
         memset(insertBuffer, 0, sizeof(insertBuffer));
         memset(nbuffer, 0, sizeof(nbuffer));
         strncpy(nbuffer, newTableName, sizeof(nbuffer));
         sprintf(insertBuffer, "INSERT INTO `%s` (groupChatName) VALUES ('%s')", nbuffer, groupChatName);
-        printf("1025--%s\n", nbuffer);
+  
 
         if (mysql_query(conn, insertBuffer)) 
         {
             fprintf(stderr, "系统错误，插入数据失败: %s\n", mysql_error(conn));
             return -1;
         }
-        // 添加以下代码来清除未读取的结果
-        while (mysql_next_result(conn) == 0) 
-        {
-            if (res = mysql_store_result(conn)) 
-            {
-                mysql_free_result(res);
-            }
-        }
-        // 显式关闭结果集
-        mysql_free_result(mysql_store_result(conn));
-
-        // 提交事务（如果需要）
-        if (mysql_commit(conn) != 0) 
-        {
-            fprintf(stderr, "提交事务失败: %s\n", mysql_error(conn));
-            return -1;
-        }
     }
     else if (ret > 0)
     {
         /*该成员已在该群*/
-        printf("1036--\n");
+        mysql_free_result(mysql_store_result(conn));
+      
         return -2; 
 
     }
@@ -1091,7 +1077,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     //     ret = 1;
     // }
 
-    return ret;
+    return 0;
 }
 
 
@@ -1265,10 +1251,7 @@ static void * baseAppointValGetchatRoomSelect(Friend *client, ELEMENTTYPE data)
     int cmp = 0;
     while (travelNode != NULL)
     {
-        printf("864---data--地址%p\n", data);
-        printf("865---client->root--地址%p\n", client->root);
-        printf("866---travelNode->data--地址%p\n", travelNode->data);
-        printf("867---client->compareFunc1--地址%p\n", client->compareFunc1);
+        
 
         cmp = client->compareFunc1(data, travelNode->data);
         if (cmp < 0)
@@ -1660,7 +1643,7 @@ int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj)
 
     // 将 json 对象转换为字符串，并拷贝到 buffer 中
     const char * json_str = json_object_to_json_string(obj);
-    printf("1290 --- buffer = %s\n", buffer);
+   
     strcat(buffer, json_object_to_json_string(obj));
     strcat(buffer, "\n");
 
@@ -1729,3 +1712,14 @@ int chatRoomSelect(Friend *client,  ELEMENTTYPE data)
     return 0;
 }
 
+
+int logOut( HashTable *pHashtable  , chatRoomMessage * Message, Friend * client, int acceptfd)
+{
+    int ret = 0;
+    int delete_name = getAsciiSum(Message->name);
+    hashTableDelAppointKey(pHashtable, delete_name);/*删除在线列表中该用户的信息*/
+    balanceBinarySearchTreeDestroy(client);
+    printf("客户端%d退出\n", acceptfd);
+    
+    return ret;
+}

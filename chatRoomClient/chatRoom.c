@@ -26,7 +26,7 @@
 
 #define CONTENT_MAX 128
 
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 1024
 #define SEND_BUFFER 140
 
 #define CONTEBNT_SIZE 1024
@@ -166,7 +166,7 @@ int chatRoomInit(chatRoomMessage **Message, groupChat ** groupChatInfo, chatCont
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
     // 创建一个json对象
     *obj = (json_object*)malloc(sizeof(json_object*)); 
@@ -816,7 +816,7 @@ static void truncateString(char *str)
     int len = strlen(str);
     if (len > SEND_BUFFER) 
     {
-        printf("发送的消息超过140字符,只保留140字符\n");
+    
         str[SEND_BUFFER - 1] = '\0';
         
     }
@@ -829,7 +829,7 @@ int chatRoomPrivateChat( char * friendName, int sockfd, chatContent * chat, chat
 { 
     while (1)
     {
-        printf("请选择1、发消息 2、发文件 3、退出\n");
+        
         char * flag = (char *)malloc(sizeof(char));
         memset(flag, 0, sizeof(flag));
 
@@ -1301,11 +1301,10 @@ int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * o
     return 0;
 }
 
-/* 释放聊天室和好友消息结构体的内存 */
-static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) ;
-
-/* 释放聊天室和好友消息结构体的内存 */
-static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage) 
+// 释放聊天室消息结构体
+static void freeChatRoomMessage(chatRoomMessage *Message) ;
+// 释放聊天室消息结构体
+static void freeChatRoomMessage(chatRoomMessage *Message) 
 {
     if (Message != NULL) {
         free(Message->name);
@@ -1313,32 +1312,123 @@ static void freeMemory(chatRoomMessage *Message, chatContent *friendMessage)
         free(Message->mail);
         free(Message->password);
         free(Message);
-    }
-    if (friendMessage != NULL) {
-        free(friendMessage->friendName);
-        free(friendMessage->myName);
-        free(friendMessage->content);
-        free(friendMessage);
+        // Message->name = NULL;
+        // Message->accountNumber = NULL;
+        // Message->mail = NULL;
+        // Message->password = NULL;
+        // Message = NULL;
+
+
     }
 }
 
-/* 关闭数据库连接并释放资源 */
-static void closeDatabase(MYSQL *conn) ;
+// 释放聊天内容结构体
+static void freeChatContent(chatContent *content) ;
 
-static void closeDatabase(MYSQL *conn) 
+static void freeChatContent(chatContent *content) 
 {
-    if (conn != NULL) {
+    if (content != NULL) 
+    {
+        free(content->friendName);
+        free(content->myName);
+        free(content->content);
+        free(content);
+        // content->friendName = NULL;
+        // content->myName = NULL;
+        // content->content = NULL;
+        // content = NULL;
+
+
+    }
+}
+
+// 释放群聊结构体
+static void freeGroupChat(groupChat *group) ;
+static void freeGroupChat(groupChat *group) 
+{
+    if (group != NULL) 
+    {
+        free(group->groupChatName);
+        free(group->membersName);
+        free(group->groupChatContent);
+        free(group);
+        // group->groupChatName = NULL;
+        // group->membersName = NULL;
+        // group->groupChatContent = NULL;
+        // group = NULL;
+    }
+}
+
+
+// 释放JSON对象
+static void freeJsonObj(json_object *obj);
+static void freeJsonObj(json_object *obj) 
+{
+    if (obj != NULL) 
+    {
+        json_object_put(obj);
+        free(obj);
+       // obj = NULL;
+    }
+}
+
+// 释放好友列表结点
+static void freeFriendNode(friendNode *node) ;
+static void freeFriendNode(friendNode *node) 
+{
+    if (node != NULL) 
+    {
+        freeChatRoomMessage(node->data);
+        free(node);
+        //node = NULL;
+    }
+}
+
+// 释放好友列表
+static void freeFriendList(Friend *list); 
+
+static void freeFriendList(Friend *list) 
+{
+    if (list != NULL) 
+    {
+        balanceBinarySearchTreeDestroy(list);
+    }
+}
+
+// 关闭数据库连接
+static void closeDBConnection(MYSQL *conn) ;
+
+static void closeDBConnection(MYSQL *conn) 
+{
+    if (conn != NULL) 
+    {
         mysql_close(conn);
+        //conn = NULL;
     }
 }
 
 /* 退出登录时的资源回收 */
-void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) 
+void logoutCleanup(Friend * client, Friend* online, Friend * Info, chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node, groupChat * groupChatInfo) 
 {
-    freeMemory(Message, friendMessage);  // 释放内存
-    json_object_put(obj);  // 释放 JSON 对象
-    closeDatabase(conn);   // 关闭数据库连接
-    free(node);            // 释放好友节点的内存
+   
+    // 释放好友列表
+    freeFriendList(client);
+    // 释放好友列表结点
+    //freeFriendNode(node);
+    // 释放JSON对象
+    //freeJsonObj(obj);
+    // obj = NULL;
+    // 释放群聊结构体
+    freeGroupChat(groupChatInfo);
+    // 释放聊天内容结构体
+    freeChatContent(friendMessage);
+    // 释放聊天室消息结构体
+    freeChatRoomMessage(Message);
+    freeFriendList(online);
+    freeFriendList(Info);
+    // 关闭数据库连接
+    //closeDBConnection(conn);
+
 }
 
 /*将json格式的字符串转换成原来onlineHash*/
@@ -1381,8 +1471,6 @@ int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj)
 int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj) 
 {
     
-
-    printf("1356 %s---%d\n", onlineHash->hashName, onlineHash->sockfd);
     obj = json_object_new_object();
     
     if (!json_object_is_type(obj, json_type_object)) {
@@ -1408,8 +1496,7 @@ int chatHashObjConvert(char * buffer, chatHash * onlineHash, json_object * obj)
     const char * json_str = json_object_to_json_string(obj);
     strncpy(buffer, json_str, BUFFER_SIZE - 1);
     buffer[BUFFER_SIZE - 1] = '\0';
-    //printf("%s\n", buffer);
-    printf("1374 --%s\n", buffer);
+   
     // 释放分配的内存
     json_object_put(obj);
     return 0;
@@ -1478,5 +1565,98 @@ int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj)
     {
         json_object_put(obj);
     }
+    return 0;
+}
+
+int chatRoomObjGroupChat(char * buffer, groupChat *chatGroup, json_object * obj) 
+{
+
+    obj = json_object_new_object();
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "groupChatName", json_object_new_string(chatGroup->groupChatName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatName\n");
+        return -1;
+    }
+   
+    if (json_object_object_add(obj, "membersName", json_object_new_string(chatGroup->membersName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for membersName\n");
+        return -1;
+    }
+
+
+    if (json_object_object_add(obj, "groupChatContent", json_object_new_string(chatGroup->groupChatContent)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatContent\n");
+        return -1;
+    }
+   
+
+    if (json_object_object_add(obj, "groupChatTime", json_object_new_int64(chatGroup->groupChatTime)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatTime\n");
+        return -1;
+    }
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+    
+    
+    json_object_put(obj);
+    
+    return 0;
+}
+
+
+/*将json格式的字符串转换成原来groupChat*/
+int chatRoomObjAnalyzeGroupChat(char * buffer, groupChat *chatGroup, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_object_new_object();
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * membersNameObj = json_object_object_get(obj, "membersName");
+    if (membersNameObj != NULL) 
+    {
+        const char * membersName = json_object_get_string(membersNameObj);
+        strncpy(chatGroup->membersName, membersName, sizeof(chatGroup->membersName) - 1);
+        chatGroup->membersName[NAMESIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatNameObj = json_object_object_get(obj, "groupChatName");
+    if (groupChatNameObj != NULL) 
+    {
+        const char * groupChatName = json_object_get_string(groupChatNameObj);
+        strncpy(chatGroup->groupChatName, groupChatName, sizeof(chatGroup->groupChatName) - 1);
+        chatGroup->groupChatName[NAMESIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatContentObj = json_object_object_get(obj, "groupChatContent");
+    if (groupChatContentObj != NULL) 
+    {
+        const char * groupChatContent = json_object_get_string(groupChatContentObj);
+        strncpy(chatGroup->groupChatContent, groupChatContent, CONTEBNT_SIZE - 1);
+        chatGroup->groupChatContent[CONTEBNT_SIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatTimeObj = json_object_object_get(obj, "groupChatTime");
+    if (groupChatTimeObj != NULL) 
+    {
+        chatGroup->groupChatTime = json_object_get_int64(groupChatTimeObj);
+    }
+
+    // 释放 json 对象的内存
+
+        json_object_put(obj);
+    
     return 0;
 }

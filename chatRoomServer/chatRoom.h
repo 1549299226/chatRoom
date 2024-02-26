@@ -37,7 +37,7 @@ typedef struct groupChat
 {
     char * groupChatName;//群名
     char * membersName;//群成员名字
-    time_t * groupChatTime; //群聊天时间
+    time_t  groupChatTime; //群聊天时间
     char * groupChatContent;//群聊记录
 }groupChat;
 
@@ -176,4 +176,8 @@ int chatRoomSelect(Friend *client,  ELEMENTTYPE data);
 
 /*字符串转整型*/
 int getAsciiSum(const char *name); 
+
+int logOut(HashTable *pHashtable  , chatRoomMessage * Message, Friend * client, int acceptfd);
+
+
 #endif
