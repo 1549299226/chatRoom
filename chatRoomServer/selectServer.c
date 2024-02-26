@@ -715,43 +715,46 @@ void* handleClient(void* arg)
                                         {
                                             for (int idx = 0; idx < count_fd; idx++)
                                             {
-                                                if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
-                                                {
-                                                    printf("700 --服务端的读已关闭\n");
-                                                    send(online_fd[idx], recvBuffer, sizeof(recvBuffer), 0);
-                                                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                                                    break;
-                                                }
-                                                // printf("707---online_fd[%d]:%d\n", count_fd, online_fd[idx]);
                                                 send(online_fd[idx], recvBuffer, sizeof(recvBuffer), 0);
+                                                
+                                                // printf("707---online_fd[%d]:%d\n", count_fd, online_fd[idx]);
+                                                
+                                            }
+                                            if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
+                                            {
+                                                printf("700 --服务端的读已关闭\n");
+                                                memset(recvBuffer, 0, sizeof(recvBuffer));
+                                                break;
                                             }
                                             memset(recvBuffer, 0, sizeof(recvBuffer));
 
                                             
                                         }
-                                        
+                                        //break;
                                         //this
-                                                                        memset(sendBuffer, 0, sizeof(sendBuffer));
-                                        // strncpy(sendBuffer, "已经结束聊天,请选择1、退出聊天2、继续聊天功能", sizeof(sendBuffer));
-                                        // send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-
-
-                                        // memset(recvBuffer, 0, sizeof(recvBuffer));
-                                        // recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                                        // if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
-                                        // {
-                                        //     memset(recvBuffer, 0, sizeof(recvBuffer));
-                                        //     break;
-                                        // }
-                                        // else
-                                        // {
-                                        //     memset(recvBuffer, 0, sizeof(recvBuffer));
-                                        //     continue;;
-                                        // }  
+                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                        
                                                 
                                     }
                                     
-                                    
+                                    memset(sendBuffer, 0 , sizeof(recvBuffer));
+                                    strncpy(sendBuffer, "已经结束聊天,请选择1、退出聊天2、继续聊天功能", sizeof(sendBuffer));
+                                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+
+                                    printf("741-----\n");
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        memset(recvBuffer, 0, sizeof(recvBuffer));
+                                        continue;;
+                                    }  
+                                
 
                                     
                                 }

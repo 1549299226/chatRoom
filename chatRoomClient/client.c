@@ -675,28 +675,29 @@ int main()
                                        
                                     }
                                     memset(flag, 0, sizeof(flag));
-                                   break;
+                                   //break;
                                     //this
-                                    // memset(recvBuffer, 0, sizeof(recvBuffer));
-                                    // recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                                    // printf("%s\n", recvBuffer);
-                                    // memset(flag, 0, sizeof(flag));
-                                    // scanf("%s", flag);
-                                    // send(sockfd, flag, sizeof(flag), 0);
+                                    memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    printf("%s\n", recvBuffer);
+                                    memset(flag, 0, sizeof(flag));
+                                    scanf("%s", flag);
+                                    send(sockfd, flag, sizeof(flag), 0);
 
-                                    // if (!strncmp(flag, "1", sizeof(flag)))
-                                    // {
-                                    //     memset(flag, 0, sizeof(flag));
-                                    //     break;
-                                    // }
-                                    // else
-                                    // {
-                                    //     memset(flag, 0, sizeof(flag));
-                                    //     continue;
-                                    // }
+                                    if (!strncmp(flag, "1", sizeof(flag)))
+                                    {
+                                        
+                                        memset(flag, 0, sizeof(flag));
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        memset(flag, 0, sizeof(flag));
+                                        continue;
+                                    }
 
                                 }
-                                else
+                                else if (!strncmp(recvBuffer, "没有好友在线无法聊天，返回上一级", sizeof(recvBuffer)))
                                 {
                                     printf("没有人在线,退出群聊\n");
                                     continue;
