@@ -1036,6 +1036,8 @@ int main()
                 scanf("%s", sendBuffer);
                 send(sockfd, sendBuffer, sizeof(sendBuffer), 0);
                 memset(sendBuffer, 0, sizeof(sendBuffer));
+                memset(recvBuffer, 0, sizeof(recvBuffer));
+
                 recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
                 if (!strncmp(recvBuffer, "他不是你的好友", sizeof(recvBuffer)))
                 {
@@ -1050,6 +1052,12 @@ int main()
                     printf("%s", recvBuffer);
                     continue;
 
+                }
+                else if (!strncmp(recvBuffer, "数据库错误", sizeof(recvBuffer)))
+                {
+                    printf("数据库错误\n");
+                    exit(-1);
+                    
                 }
                 
                 

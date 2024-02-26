@@ -681,9 +681,9 @@ int chatRoomLogIn(int fd, chatRoomMessage *Message, Friend *client, MYSQL * conn
                             balanceBinarySearchTreeInsert(client, node);
                             printf("631 size- %d\n", client->size);
                             
-                            // memset(accountNumber, 0, sizeof(ACCOUNTNUMBER));
-                            // memset(name, 0, sizeof(NAMESIZE));
-                        // }
+                    //         memset(accountNumber, 0, sizeof(ACCOUNTNUMBER));
+                    //         memset(name, 0, sizeof(NAMESIZE));
+                    //     }
                         
                         
                         
