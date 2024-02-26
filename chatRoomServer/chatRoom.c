@@ -921,7 +921,7 @@ int travelGroupChatName(MYSQL *conn, chatRoomMessage * Message, char * str_trave
     buffer[0] = '\0';
     while ((row = mysql_fetch_row(res)) != NULL) 
     {
-        strcat(buffer, "[groupName]\t");
+        //strcat(buffer, "[groupName]\t");
         strcat(buffer, row[0]);
         strcat(buffer, "\t");
     }
