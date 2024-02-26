@@ -215,16 +215,9 @@ void* handleClient(void* arg)
                 strncpy(onlineHash->hashName, buffer, ACCOUNTNUMBER);
                 onlineHash->sockfd = acceptfd;
 
-                // send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                // memset(sendBuffer, 0, sizeof(sendBuffer));
-
-                // send(acceptfd, buffer, sizeof(buffer), 0);
-                // printf("214----%s\n", buffer);
                 
                 
-                // recv(acceptfd,recvBuffer, sizeof(recvBuffer), 0);
-                //printf("218----%s\n", recvBuffer);
-                //chatHashObjAnalyze(recvBuffer, onlineHash, obj);
+                
                 memset(recvBuffer, 0, sizeof(recvBuffer));    /*读取传来的信息*/
                 
                 if (!chatRoomLogIn(acceptfd, Message, client, conn, hashHandle->onlineTable, onlineHash))
@@ -452,7 +445,7 @@ void* handleClient(void* arg)
                                 }
                                 mysql_free_result(res);  // 释放查询结果集
                             }
-                            printf("399----%s,%s\n", accountNumber, name);
+                           
                             send(acceptfd, accountNumber, ACCOUNTNUMBER + 1, 0);
 
                                                 /*这里少东西还，*/
@@ -611,7 +604,7 @@ void* handleClient(void* arg)
                             memset(accountNumber, 0, ACCOUNTNUMBER);
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             recv(acceptfd, accountNumber, sizeof(accountNumber), 0); 
-                            printf("614---accountNumber:%s\n", accountNumber);
+                         
                             snprintf(buffer, sizeof(buffer), "select name from chatRoom where accountNumber = '%s'", accountNumber);
                             if (mysql_query(conn, buffer))
                             {
@@ -630,7 +623,7 @@ void* handleClient(void* arg)
                                     {
                                     
                                         snprintf(buffer, sizeof(buffer), "%s", row[0]);
-                                        printf("632---本人姓名:%s\n",buffer);
+                                       
 
                                             // 处理完一行数据后的其他操作
                                     }
@@ -638,23 +631,22 @@ void* handleClient(void* arg)
                                 }
                             }
                             send(acceptfd, buffer, sizeof(buffer), 0);
-                            printf("640---本人姓名:%s\n",buffer);
+                           
                             /*问题在此，客户端还未到写群名就已经执行完这里*/
                             
                             /*遍历表中的成员名*/
                             char *resultString = (char *)malloc(sizeof(BUFFER_SIZE));
                             memset(resultString, 0, sizeof(resultString));
                             
-                            printf("647---群名:%s\n",recvBuffer);
+                            
                             recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                            printf("650---群名:%s\n",recvBuffer);
+                            
 
                             
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                         
                             recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
-                            printf("644---群名:%s\n",recvBuffer);
-                            printf("?????????\n");
+                           
                             
                             
                             int result = iterateTableAndReturnString(resultString, conn, recvBuffer);
@@ -690,7 +682,7 @@ void* handleClient(void* arg)
                                 while (token != NULL && count < BUFFER_SIZE) 
                                 {
                                     str_members[count] = token;
-                                    printf("672---%s\n", str_members[count]);
+                                   
                                     ret = searchFriendIfOnline(hashHandle->onlineTable, str_members[count]);
                                     
                                     if (ret != 0)
@@ -842,8 +834,35 @@ void* handleClient(void* arg)
                                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
                                         printf("%s\n", sendBuffer);
                                         
-                                        memset(sendBuffer, 0, sizeof(sendBuffer));
+                                       
+                                        memset(buffer, 0, sizeof(buffer));
+                                        snprintf(buffer, sizeof(buffer), "select name from chatRoom where accountNumber = '%s'", Message->accountNumber);
+                                        if (mysql_query(conn, buffer))
+                                        {
+                                            printf("查询失败\n");
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            MYSQL_RES *res = mysql_use_result(conn);
+                                            if (res != NULL) 
+                                            {
+                                                memset(buffer, 0, sizeof(buffer));
 
+                                                MYSQL_ROW row;
+                                                if ((row = mysql_fetch_row(res)) != NULL) 
+                                                {
+                                                
+                                                    snprintf(buffer, sizeof(buffer), "%s", row[0]);
+                                                   
+
+                                                        // 处理完一行数据后的其他操作
+                                                }
+                                                mysql_free_result(res);  // 释放查询结果集
+                                            }
+                                        }
+                                        
+                                        pullGroupMembers(conn, buffer, Message, groupChatName);
                                         /*输入好友账号拉取群聊*/
                                     while (1)
                                     {    
@@ -1147,7 +1166,7 @@ void* handleClient(void* arg)
                         {
                             
                             snprintf(buffer, sizeof(buffer), "%s", row[0]);
-                            printf("628----buffer:%s\n", buffer);
+                           
 
 
                         }
@@ -1216,11 +1235,10 @@ void* handleClient(void* arg)
             
         
         
-        // ... 原先的代码 ...
+     
     
     
 
-    // 原先的代码结束
 
     close(acceptfd);  // 处理结束后关闭acceptfd
     // pthread_exit(NULL);
