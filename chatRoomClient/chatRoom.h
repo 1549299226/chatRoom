@@ -135,7 +135,7 @@ int chatRoomObjConvertContent(char * buffer, chatContent * chat, json_object * o
 int chatRoomObjAnalyzeContent(char * buffer, chatContent * chat, json_object * obj);
 
 /* 退出登录时的资源回收 */
-void logoutCleanup(chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node) ;
+void logoutCleanup(Friend * client, Friend* online, Friend * Info, chatRoomMessage *Message, chatContent *friendMessage, json_object *obj, MYSQL *conn, friendNode *node, groupChat * groupChatInfo) ;
 
 /*将json字符串转化成chatHash结构体*/
 int chatHashObjAnalyze(char * buffer, chatHash * onlineHash, json_object * obj);

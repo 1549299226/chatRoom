@@ -196,7 +196,7 @@ int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatCon
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
 
     // 创建一个json对象
@@ -730,6 +730,7 @@ int getAsciiSum(const char *name)
     
     return sum;
 }
+
 
 /* 在线列表的插入 */
 int chatRoomOnlineTable(chatHash *onlineHash, HashTable *onlineTable)
@@ -1711,3 +1712,14 @@ int chatRoomSelect(Friend *client,  ELEMENTTYPE data)
     return 0;
 }
 
+
+int logOut( HashTable *pHashtable  , chatRoomMessage * Message, Friend * client, int acceptfd)
+{
+    int ret = 0;
+    int delete_name = getAsciiSum(Message->name);
+    hashTableDelAppointKey(pHashtable, delete_name);/*删除在线列表中该用户的信息*/
+    balanceBinarySearchTreeDestroy(client);
+    printf("客户端%d退出\n", acceptfd);
+    
+    return ret;
+}
