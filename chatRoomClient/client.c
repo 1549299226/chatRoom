@@ -98,26 +98,21 @@ void * private_chatGroup(void * arg)
         memset(closedChat->groupChatContent, 0, BUFFER_SIZE);
         memset(closedChat->membersName, 0, NAMESIZE);
         memset(dateStr, 0, sizeof(dateStr));
-         printf("100 --该读\n");
-
+    
         if (recv(sockfd, recvBuffer, sizeof(recvBuffer), 0) == -1)
         {
             perror("recv");
             break;
         }
-        printf("106 recvBuffer:%s\n", recvBuffer);
-        
+       
         if (strlen(recvBuffer) == 1 && recvBuffer[0] == 27)
         {
             memset(recvBuffer, 0, sizeof(recvBuffer));
             printf("关闭客户端的读\n");
             break;
         }
-        // if (recvBuffer == 0)
-        // {
-        //     continue;
-        // }
-        printf("105 recvBuffer:%s\n", recvBuffer);
+        
+        
         if (chatRoomObjAnalyzeGroupChat(recvBuffer, closedChat, obj))
         {
             printf("json转groupChat结构体失败\n");
@@ -133,7 +128,7 @@ void * private_chatGroup(void * arg)
 
         /*自定义时间的表示*/
         strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", localTime);
-        printf("groupChatName:%s, membersName:%s, time:%s \n %s\n", closedChat->groupChatName ,closedChat->membersName, formattedTime, closedChat->groupChatContent);
+        printf("群名:%s, 成员昵称:%s, time:%s \n %s\n", closedChat->groupChatName ,closedChat->membersName, formattedTime, closedChat->groupChatContent);
         
          
     }
@@ -639,7 +634,8 @@ int main()
 
                                 if (!strncmp(recvBuffer, "请输入聊天内容", sizeof(recvBuffer)))
                                 {
-                                    printf("%s\n", recvBuffer);
+                                    
+                                    printf("可以开始聊天了!!!\n");
                                     memset(recvBuffer, 0, sizeof(recvBuffer));
 
                                     pthread_create(&tid_gc, 0, private_chatGroup, (void *)&gc);
@@ -647,23 +643,19 @@ int main()
                                     {
                                         memset(buffer, 0, sizeof(buffer));
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
-                                        
-                                        printf("635 --该写\n");
-                                        
+                                       
                                         chatGroup->groupChatTime = time(NULL);
-                                        printf("638 --时间:%ld\n", chatGroup->groupChatTime);
+                                        
                                         while (getchar() != '\n');
                                         scanf("%s", sendBuffer);
                                         strncpy(chatGroup->groupChatContent, sendBuffer, sizeof(sendBuffer)); 
-                                        printf("642 --聊天内容:%s\n", chatGroup->groupChatContent);
-
-                                        
+                                       
                                         if (chatRoomObjGroupChat(buffer, chatGroup, obj))
                                         {
                                             printf("chatGroup转json失败\n");
                                             break;
                                         }
-                                        printf("650 --json:%s\n", buffer);
+                                        
 
                                         if (strlen(sendBuffer) == 1 && sendBuffer[0] == 27)
                                         {

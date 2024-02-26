@@ -48,9 +48,9 @@ enum CHOIVE
 
 int compareFunc(void *val1, void *val2)
 {
-    printf("50-----------------\n");
+   
     hashNode *key1 = (hashNode *)val1;
-    printf("52-----------------\n");
+ 
 
     hashNode *key2 = (hashNode *)val2;
     printf("key1->real_key:%d, key2->real_key:%d\n", key1->real_key, key2->real_key);
@@ -986,7 +986,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
         {
             char *accountNumber = row[0];
             sprintf(newTableName, "groupChat%s", accountNumber);
-            printf("989---friengacc:%s\n", newTableName);
+           
 
         } 
         else 
@@ -1005,7 +1005,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     memset(createTableQery, 0, sizeof(createTableQery));
     snprintf(createTableQery, sizeof(createTableQery), "CREATE TABLE IF NOT EXISTS `%s` ("
         "groupChatName VARCHAR(50) PRIMARY KEY)", nbuffer);
-     printf("1001---friengacc:%s\n", nbuffer);
+
     if (mysql_query(conn, createTableQery)) 
     {
         fprintf(stderr, "%s\n", mysql_error(conn));
@@ -1020,9 +1020,9 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     memset(nbuffer, 0, sizeof(nbuffer));
     strncpy(nbuffer, newTableName, sizeof(nbuffer));
     memset(insertBuffer, 0, sizeof(insertBuffer));
-    printf("1015---%s\n", nbuffer);
+
     snprintf(insertBuffer, sizeof(insertBuffer), "SELECT * FROM %s WHERE groupChatName = '%s'", nbuffer, groupChatName);
-    printf("1014---newTableName: %s\n", newTableName);
+   
     
     ret = mysql_query(conn, insertBuffer);
     if (ret < 0) 
@@ -1038,7 +1038,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
         memset(nbuffer, 0, sizeof(nbuffer));
         strncpy(nbuffer, newTableName, sizeof(nbuffer));
         sprintf(insertBuffer, "INSERT INTO `%s` (groupChatName) VALUES ('%s')", nbuffer, groupChatName);
-        printf("1025--%s\n", nbuffer);
+  
 
         if (mysql_query(conn, insertBuffer)) 
         {
@@ -1050,7 +1050,7 @@ int pullGroupMembers(MYSQL *conn, char *memberName, chatRoomMessage *Message, ch
     {
         /*该成员已在该群*/
         mysql_free_result(mysql_store_result(conn));
-        printf("1036--\n");
+      
         return -2; 
 
     }
@@ -1250,10 +1250,7 @@ static void * baseAppointValGetchatRoomSelect(Friend *client, ELEMENTTYPE data)
     int cmp = 0;
     while (travelNode != NULL)
     {
-        printf("864---data--地址%p\n", data);
-        printf("865---client->root--地址%p\n", client->root);
-        printf("866---travelNode->data--地址%p\n", travelNode->data);
-        printf("867---client->compareFunc1--地址%p\n", client->compareFunc1);
+        
 
         cmp = client->compareFunc1(data, travelNode->data);
         if (cmp < 0)
@@ -1645,7 +1642,7 @@ int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj)
 
     // 将 json 对象转换为字符串，并拷贝到 buffer 中
     const char * json_str = json_object_to_json_string(obj);
-    printf("1290 --- buffer = %s\n", buffer);
+   
     strcat(buffer, json_object_to_json_string(obj));
     strcat(buffer, "\n");
 
