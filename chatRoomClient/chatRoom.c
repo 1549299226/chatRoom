@@ -26,7 +26,7 @@
 
 #define CONTENT_MAX 128
 
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 1024
 #define SEND_BUFFER 140
 
 #define CONTEBNT_SIZE 1024
@@ -166,7 +166,7 @@ int chatRoomInit(chatRoomMessage **Message, groupChat ** groupChatInfo, chatCont
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
     // 创建一个json对象
     *obj = (json_object*)malloc(sizeof(json_object*)); 
@@ -1478,5 +1478,101 @@ int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj)
     {
         json_object_put(obj);
     }
+    return 0;
+}
+
+int chatRoomObjGroupChat(char * buffer, groupChat *chatGroup, json_object * obj) 
+{
+
+    obj = json_object_new_object();
+     // 创建 json 对象并添加字段
+    if (json_object_object_add(obj, "groupChatName", json_object_new_string(chatGroup->groupChatName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatName\n");
+        return -1;
+    }
+    printf("1494--groupChatName:%s\n", chatGroup->groupChatName);
+    if (json_object_object_add(obj, "membersName", json_object_new_string(chatGroup->membersName)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for membersName\n");
+        return -1;
+    }
+    printf("1500--membersName:%s\n", chatGroup->membersName);
+
+    if (json_object_object_add(obj, "groupChatContent", json_object_new_string(chatGroup->groupChatContent)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatContent\n");
+        return -1;
+    }
+    printf("1507--groupChatContent:%s\n", chatGroup->groupChatContent);
+
+    if (json_object_object_add(obj, "groupChatTime", json_object_new_int64(chatGroup->groupChatTime)) != 0) 
+    {
+        fprintf(stderr, "json_object_object_add failed for groupChatTime\n");
+        return -1;
+    }
+
+    // 将 json 对象转换为字符串，并拷贝到 buffer 中
+    const char * json_str = json_object_to_json_string(obj);
+    strncpy(buffer, json_str, BUFFER_SIZE - 1);
+    buffer[BUFFER_SIZE - 1] = '\0';
+    printf("1515--json:%s\n", json_str);
+
+    printf("1514--groupChatTime:%ld\n", chatGroup->groupChatTime);
+    printf("1515--json:%s\n", buffer);
+    
+    json_object_put(obj);
+    
+    return 0;
+}
+
+
+/*将json格式的字符串转换成原来groupChat*/
+int chatRoomObjAnalyzeGroupChat(char * buffer, groupChat *chatGroup, json_object * obj)
+{
+    // 将 json 格式的字符串转换为 json 对象
+    obj = json_object_new_object();
+    obj = json_tokener_parse(buffer);
+    if (obj == NULL) 
+    {
+        fprintf(stderr, "json_tokener_parse failed\n");
+        return -1;
+    }
+    
+    // 从 json 对象中读取字段
+    struct json_object * membersNameObj = json_object_object_get(obj, "membersName");
+    if (membersNameObj != NULL) 
+    {
+        const char * membersName = json_object_get_string(membersNameObj);
+        strncpy(chatGroup->membersName, membersName, sizeof(chatGroup->membersName) - 1);
+        chatGroup->membersName[NAMESIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatNameObj = json_object_object_get(obj, "groupChatName");
+    if (groupChatNameObj != NULL) 
+    {
+        const char * groupChatName = json_object_get_string(groupChatNameObj);
+        strncpy(chatGroup->groupChatName, groupChatName, sizeof(chatGroup->groupChatName) - 1);
+        chatGroup->groupChatName[NAMESIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatContentObj = json_object_object_get(obj, "groupChatContent");
+    if (groupChatContentObj != NULL) 
+    {
+        const char * groupChatContent = json_object_get_string(groupChatContentObj);
+        strncpy(chatGroup->groupChatContent, groupChatContent, CONTEBNT_SIZE - 1);
+        chatGroup->groupChatContent[CONTEBNT_SIZE - 1] = '\0';
+    }
+
+    struct json_object * groupChatTimeObj = json_object_object_get(obj, "groupChatTime");
+    if (groupChatTimeObj != NULL) 
+    {
+        chatGroup->groupChatTime = json_object_get_int64(groupChatTimeObj);
+    }
+
+    // 释放 json 对象的内存
+
+        json_object_put(obj);
+    
     return 0;
 }

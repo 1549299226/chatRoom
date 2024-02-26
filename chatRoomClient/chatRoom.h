@@ -34,7 +34,7 @@ typedef struct groupChat
 {
     char * groupChatName;//群名
     char * membersName;//群成员名字
-    time_t * groupChatTime; //群聊天时间
+    time_t  groupChatTime; //群聊天时间
     char * groupChatContent;//群聊记录
 }groupChat;
 
@@ -70,6 +70,12 @@ typedef struct chatOTO
     int otoBuffer;
     int sockfd;
 }chatOTO;
+
+typedef struct chatgc
+{
+    int gcBuffer;
+    int sockfd;
+}chatgc;
 
 int existenceOrNot(void *arg1, void *arg2);
 
@@ -143,5 +149,12 @@ int printStructObj(char * buffer, chatRoomMessage * Message, json_object * obj);
 
 /*将json格式的字符串转换成原来Message*/
 int objPrintStruct(char * buffer, chatRoomMessage * Message, json_object * obj);
+
+/*将groupChat转换成json格式的字符串进行传送*/
+int chatRoomObjGroupChat(char * buffer, groupChat *chatGroup, json_object * obj);
+
+/*将json格式的字符串转换成原来groupChat*/
+int chatRoomObjAnalyzeGroupChat(char * buffer, groupChat *chatGroup, json_object * obj);
+
 
 #endif
