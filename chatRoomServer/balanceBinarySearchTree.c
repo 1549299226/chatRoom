@@ -530,7 +530,7 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
         /* 更新树的结点 */
         (pBstree->size)++;
         insertNodeAfter(pBstree, pBstree->root);
-        printf("yuchun\n");
+        // printf("yuchun\n");
         return ret;
     }
 
@@ -550,17 +550,17 @@ int balanceBinarySearchTreeInsert(BalanceBinarySearchTree *pBstree, ELEMENTTYPE 
         /* 插入元素 < 遍历到的结点 */
         if (cmp < 0)
         {
-            printf("L>>>>>\n");
+            // printf("L>>>>>\n");
             travelNode = travelNode->left;
         }
         else if (cmp > 0)     /* 插入元素 > 遍历到的结点 */
         {
-            printf("R>>>>>>\n");
+            // printf("R>>>>>>\n");
             travelNode = travelNode->right;
         }
         else
         {
-            printf("over-----\n");
+            // printf("over-----\n");
             /* 插入元素 = 遍历到的结点 */
             return ret;
         }
@@ -981,7 +981,11 @@ int balanceBinarySearchTreeDestroy(BalanceBinarySearchTree *pBstree)
     {
         return NULL_PTR;
     }
-
+    if (pBstree->root)
+    {
+        return NULL_PTR;
+    }
+    
     int ret;
     DoubleLinkListQueue *pQueue = NULL;
     doubleLinkListQueueInit(&pQueue);
