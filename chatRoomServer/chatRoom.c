@@ -196,7 +196,7 @@ int chatRoomInit(chatRoomMessage ** Message, groupChat ** groupChatInfo, chatCon
     }
     bzero((*groupChatInfo)->groupChatContent , sizeof(char )* CONTENT_MAX);
     //初始化聊天时间
-    time((*groupChatInfo)->groupChatTime);
+    time(&(*groupChatInfo)->groupChatTime);
 
 
     // 创建一个json对象

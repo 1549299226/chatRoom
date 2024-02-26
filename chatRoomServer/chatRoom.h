@@ -37,7 +37,7 @@ typedef struct groupChat
 {
     char * groupChatName;//群名
     char * membersName;//群成员名字
-    time_t * groupChatTime; //群聊天时间
+    time_t  groupChatTime; //群聊天时间
     char * groupChatContent;//群聊记录
 }groupChat;
 

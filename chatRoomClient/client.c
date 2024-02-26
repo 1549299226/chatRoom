@@ -824,7 +824,7 @@ int main()
                                     }
                                 }
 
-                                if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
+                                else if (!strncmp(recvBuffer, "此时好友不在线", sizeof(recvBuffer)))
                                 {
                                     memset(recvBuffer, 0, sizeof(recvBuffer));
                                     
@@ -898,6 +898,8 @@ int main()
                     if (!strncmp(flag, "1", sizeof(flag)))
                     {
                         memset(flag, 0, sizeof(flag));
+
+                        //send(sockfd, FIN, sizeof(sendBuffer), 0);
                         /*退出登录时的资源回收*/
                        //logoutCleanup (client, online, Info,  Message, friendMessage, obj, conn, node, groupChatInfo);
                         //free(flag);

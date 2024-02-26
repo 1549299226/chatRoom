@@ -26,7 +26,7 @@
 
 #define CONTENT_MAX 128
 
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 1024
 #define SEND_BUFFER 140
 
 #define CONTEBNT_SIZE 1024
