@@ -25,6 +25,8 @@
 
 #define TIME_SIZE 100
 
+
+
 void * pthread_Fun(int *arg)
 { 
     int sockfd = * arg;
@@ -134,6 +136,7 @@ void * private_chatGroup(void * arg)
     }
     pthread_exit(NULL);
 }
+/*私聊*/
 void * private_chat(void * arg)
 {
     /*将当前线程标记为可被分离的状态，这样当线程结束时，其资源将会被自动释放*/
@@ -276,6 +279,8 @@ int main()
 
     while (1)
     {
+
+        
         //登陆注册
         while (1)
         {       
@@ -543,10 +548,11 @@ int main()
 
                     /*读取选项*/
                     /*请选择1、群聊 2、私聊 3、返回上一级*/
+                    printf("请选择1、群聊 2、私聊 3、返回上一级\n");
 
-                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                    printf("%s\n", recvBuffer); 
+                    // memset(recvBuffer, 0, sizeof(recvBuffer));
+                    // recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                    // printf("%s\n", recvBuffer); 
 
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     printf("请输入选项\n");
@@ -581,7 +587,11 @@ int main()
 
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                            printf("%s\n", recvBuffer);
+                            if (!strncmp(recvBuffer, "OK", sizeof(recvBuffer)))
+                            {
+                                printf("1、请输入群聊名进行聊天2、建群3、返回上一级\n");
+                            }
+                            //printf("%s\n", recvBuffer);
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             /*1、请输入群聊名进行聊天2、建群3、返回上一级*/
                             scanf("%s", flag);
@@ -589,6 +599,7 @@ int main()
                             /*输入群聊名称进行聊天*/
                             if (!strncmp(flag, "1", sizeof(flag)))
                             {
+                                memset(flag, 0, sizeof(flag));
                                 groupChat *chatGroup = (groupChat *)malloc(sizeof(groupChat));
                                 memset(chatGroup, 0, sizeof(chatGroup));
                                 chatGroup->groupChatContent = (char *)malloc(BUFFER_SIZE);
@@ -675,29 +686,28 @@ int main()
                                        
                                     }
                                     memset(flag, 0, sizeof(flag));
-                                   //break;
+                                   break;
                                     //this
-                                    memset(recvBuffer, 0, sizeof(recvBuffer));
-                                    recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
-                                    printf("%s\n", recvBuffer);
-                                    memset(flag, 0, sizeof(flag));
-                                    scanf("%s", flag);
-                                    send(sockfd, flag, sizeof(flag), 0);
+                                    // memset(recvBuffer, 0, sizeof(recvBuffer));
+                                    // recv(sockfd, recvBuffer, sizeof(recvBuffer), 0);
+                                    // printf("%s\n", recvBuffer);
+                                    // memset(flag, 0, sizeof(flag));
+                                    // scanf("%s", flag);
+                                    // send(sockfd, flag, sizeof(flag), 0);
 
-                                    if (!strncmp(flag, "1", sizeof(flag)))
-                                    {
-                                        
-                                        memset(flag, 0, sizeof(flag));
-                                        continue;
-                                    }
-                                    else
-                                    {
-                                        memset(flag, 0, sizeof(flag));
-                                        continue;
-                                    }
+                                    // if (!strncmp(flag, "1", sizeof(flag)))
+                                    // {
+                                    //     memset(flag, 0, sizeof(flag));
+                                    //     break;
+                                    // }
+                                    // else
+                                    // {
+                                    //     memset(flag, 0, sizeof(flag));
+                                    //     continue;
+                                    // }
 
                                 }
-                                else if (!strncmp(recvBuffer, "没有好友在线无法聊天，返回上一级", sizeof(recvBuffer)))
+                                else
                                 {
                                     printf("没有人在线,退出群聊\n");
                                     continue;
@@ -709,7 +719,8 @@ int main()
                             /*建群*/
                             else if (!strncmp(flag, "2", sizeof(flag)))
                             {
-
+                                memset(flag, 0, sizeof(flag));
+                                
                                 char tmp_friendinfo[BUFFER_SIZE];
                                 memset(tmp_friendinfo, 0, sizeof(tmp_friendinfo));
 

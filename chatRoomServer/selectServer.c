@@ -131,7 +131,7 @@ void* handleClient(void* arg)
     memset(sendBuffer, 0, sizeof(sendBuffer));
     
     while (1) 
-    {            
+    {     
         while (1)
         {
             /*注册*/
@@ -537,11 +537,11 @@ void* handleClient(void* arg)
                 while (1)
                 {
                     //聊天功能
-                    memset(sendBuffer, 0, sizeof(sendBuffer));
-                    strncpy(sendBuffer, "请选择1、群聊 2、私聊 3、返回上一级(主界面)", sizeof(sendBuffer));
-                    send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
-                    memset(sendBuffer, 0, sizeof(sendBuffer));
-
+                    // memset(sendBuffer, 0, sizeof(sendBuffer));
+                    // strncpy(sendBuffer, "请选择1、群聊 2、私聊 3、返回上一级(主界面)", sizeof(sendBuffer));
+                    // send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);
+                    // memset(sendBuffer, 0, sizeof(sendBuffer));
+                    int count = 0;
                     //选择聊天方式    
                     memset(recvBuffer, 0, sizeof(recvBuffer));
                     /*读取聊天方式选择结果*/
@@ -549,6 +549,7 @@ void* handleClient(void* arg)
                     if (ret == 0)
                     {
                         printf("客户端%d异常关闭\n", acceptfd);
+                        count = 1;
                         /*调用退出登录代码 to do*/
                         close(acceptfd);
                         return NULL;
@@ -557,6 +558,7 @@ void* handleClient(void* arg)
                     /*群聊*/
                 if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//群聊
                 {
+                    memset(recvBuffer, 0, sizeof(recvBuffer));
                     while (1)
                     {
                         memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -590,7 +592,7 @@ void* handleClient(void* arg)
 
 
                         memset(sendBuffer, 0, sizeof(sendBuffer)); 
-                        strncpy(sendBuffer, "1、以上为群聊信息,请输入群聊名进行聊天 2、建群 3、返回上一级", sizeof(sendBuffer));     
+                        strncpy(sendBuffer, "OK", sizeof(sendBuffer));     
                         send(acceptfd, sendBuffer, sizeof(sendBuffer), 0);                
                         memset(sendBuffer, 0, sizeof(sendBuffer)); 
 
@@ -606,7 +608,6 @@ void* handleClient(void* arg)
 
                         if (!strncmp(recvBuffer, "1", sizeof(recvBuffer)))//输入群聊名称进行聊天
                         {
-                            
                             
                             char buffer[BUFFER_SIZE];
                             memset(buffer, 0, sizeof(buffer));
@@ -715,12 +716,19 @@ void* handleClient(void* arg)
 
                                     while (1)
                                     {
-                                    
+                                        
                                         memset(recvBuffer, 0, sizeof(recvBuffer));
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
                                         printf("696 --该读\n");
-                                        
-                                        if (recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0) >= 0)
+                                        ret = recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
+                                        if (ret == 0)
+                                        {
+                                            printf("客户端%d异常关闭\n", acceptfd);
+                                            /*调用退出登录代码 to do*/
+                                            close(acceptfd);
+                                            return NULL;
+                                        }
+                                        if ( ret > 0)
                                         {
                                             for (int idx = 0; idx < count_fd; idx++)
                                             {
@@ -739,6 +747,8 @@ void* handleClient(void* arg)
 
                                             
                                         }
+                                        
+                                        
                                         //break;
                                         //this
                                         memset(sendBuffer, 0, sizeof(sendBuffer));
@@ -997,10 +1007,11 @@ void* handleClient(void* arg)
                     
                     
                     }
-                }
-/*私聊*/
-                 else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
-                {
+                    }
+                    /*私聊*/
+                    else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                    {
+                        memset(recvBuffer, 0, sizeof(recvBuffer));
                     // memset(recvBuffer, 0, sizeof(recvBuffer));
                     // recv(acceptfd, recvBuffer, sizeof(recvBuffer), 0);
                     char buffer[BUFFER];
@@ -1019,6 +1030,7 @@ void* handleClient(void* arg)
                     else
                     {
                         /*有好友将好友的信息发给该客户*/
+                        memset(buffer, 0, sizeof(buffer));
                         balanceBinarySearchTreeInOrderTravel(client, buffer); //这个应该写在服务器上在服务其中查询好友的列表
                         printf("527--- %s\n", buffer);
                         send(acceptfd, buffer, sizeof(buffer), 0);
@@ -1171,10 +1183,13 @@ break;
                                 memset(sendBuffer, 0, sizeof(sendBuffer));
                                 strncpy(sendBuffer, "他不是你的好友， 返回", sizeof(sendBuffer));
                                 send(acceptfd,sendBuffer, 0, sizeof(sendBuffer));
-                        continue;
-                    }
-                }
-                else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
+                                printf("%s\n", sendBuffer);
+                                memset(sendBuffer, 0, sizeof(sendBuffer));
+
+                                continue;
+                            }
+                        }
+                        else if (!strncmp(recvBuffer, "2", sizeof(recvBuffer)))
                         {
                             memset(recvBuffer, 0, sizeof(recvBuffer));
                             break;
@@ -1205,6 +1220,7 @@ break;
                 
             else if (!strncmp(recvBuffer, "3", sizeof(recvBuffer)))
             {
+                memset(recvBuffer, 0, sizeof(recvBuffer));
                 //删除好友
                 int ret = 0;
                 char buffer[BUFFER_SIZE];
